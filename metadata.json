@@ -1,0 +1,6 @@
+{
+  "name": "FinanceControl",
+  "description": "Aplicativo de gestão financeira pessoal e portfólio cripto com controle de fluxo de caixa, extrato, contas a pagar e preferências.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
