@@ -18,13 +18,16 @@ import {
   TrendingUp,
   RotateCcw,
   Sparkles,
-  LogOut
+  LogOut,
+  Lightbulb,
+  GlassWaterIcon,
+  Network
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { useAppData } from '../hooks/useAppData';
 import { updateSettings, resetToDemoData } from '../services/storage';
-import { Currency, ThemeMode } from '../types';
+import { Currency, ThemeMode, AppData } from '../types';
 import { formatCurrency } from '../utils/formatters';
 
 interface MorePageProps {
@@ -145,31 +148,28 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => handleThemeChange('claro')}
-              className={`py-3 px-2 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-xs font-bold transition-all ${
-                data.settings.theme === 'claro'
-                  ? 'bg-indigo-50 border-indigo-600 text-indigo-600 dark:bg-slate-800 dark:text-white dark:border-indigo-500 ring-2 ring-indigo-500/20'
-                  : 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'
-              }`}
+              className={`py-3 px-2 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-xs font-bold transition-all ${data.settings.theme === 'claro'
+                ? 'bg-indigo-50 border-indigo-600 text-indigo-600 dark:bg-slate-800 dark:text-white dark:border-indigo-500 ring-2 ring-indigo-500/20'
+                : 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                }`}
             >
               <Sun className="w-4 h-4" /> Claro
             </button>
             <button
               onClick={() => handleThemeChange('escuro')}
-              className={`py-3 px-2 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-xs font-bold transition-all ${
-                data.settings.theme === 'escuro'
-                  ? 'bg-indigo-900 border-indigo-600 text-white dark:bg-slate-800 dark:border-indigo-500 ring-2 ring-indigo-500/20'
-                  : 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'
-              }`}
+              className={`py-3 px-2 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-xs font-bold transition-all ${data.settings.theme === 'escuro'
+                ? 'bg-indigo-900 border-indigo-600 text-white dark:bg-slate-800 dark:border-indigo-500 ring-2 ring-indigo-500/20'
+                : 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                }`}
             >
               <Moon className="w-4 h-4" /> Escuro
             </button>
             <button
               onClick={() => handleThemeChange('auto')}
-              className={`py-3 px-2 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-xs font-bold transition-all ${
-                data.settings.theme === 'auto'
-                  ? 'bg-indigo-50 border-indigo-600 text-indigo-600 dark:bg-slate-800 dark:border-indigo-500 ring-2 ring-indigo-500/20'
-                  : 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'
-              }`}
+              className={`py-3 px-2 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-xs font-bold transition-all ${data.settings.theme === 'auto'
+                ? 'bg-indigo-50 border-indigo-600 text-indigo-600 dark:bg-slate-800 dark:border-indigo-500 ring-2 ring-indigo-500/20'
+                : 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                }`}
             >
               <Laptop className="w-4 h-4" /> Auto
             </button>
@@ -254,9 +254,28 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
             </span>
           </div>
           <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
+            <Lightbulb className="w-4 h-4 text-indigo-600" />
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              Energia
+            </span>
+          </div>
+          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
+            <GlassWaterIcon className="w-4 h-4 text-indigo-600" />
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              Água
+            </span>
+          </div>
+          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
+            <Network className="w-4 h-4 text-indigo-600" />
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              Internet
+            </span>
+          </div>
+
+          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
             <Home className="w-4 h-4 text-indigo-600" />
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Moradia
+              Outros
             </span>
           </div>
         </div>

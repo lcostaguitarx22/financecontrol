@@ -60,7 +60,7 @@ export const FinancePage: React.FC = () => {
   const categoryExpenses = Object.entries(expensesByCategory)
     .map(([name, value], index) => ({
       name,
-      value,
+      value: Number(value),
       color: colors[index % colors.length]
     }))
     .sort((a, b) => b.value - a.value);
