@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { AppData } from '../types';
 import { initialAppData } from '../data/mockData';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -6,7 +6,23 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
 import { saveAppData } from '../services/storage';
 
-export function useAppData() {
+interface AppDataContextProps {
+  data: AppData;
+  setData: (updater: (prev: AppData) => AppData) => void;
+  reloadData: () => void;
+  user: User | null;
+  loading: boolean;
+}
+
+const AppDataContext = createContext<AppDataContextProps>({
+  data: initialAppData,
+  setData: () => {},
+  reloadData: () => {},
+  user: null,
+  loading: true,
+});
+
+export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<AppData>(initialAppData);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,5 +64,13 @@ export function useAppData() {
 
   const reloadData = useCallback(() => {}, []);
 
-  return { data, setData: updateData, reloadData, user, loading };
+  return (
+    <AppDataContext.Provider value={{ data, setData: updateData, reloadData, user, loading }}>
+      {children}
+    </AppDataContext.Provider>
+  );
+};
+
+export function useAppData() {
+  return useContext(AppDataContext);
 }
