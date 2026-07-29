@@ -24,7 +24,18 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
   const [dueDate, setDueDate] = useState(getTodayFormatted());
   const [category, setCategory] = useState('Utilidades');
 
-  const categories = ['Cartão', 'Conectividade', 'Utilidades', 'Moradia', 'Outros'];
+  const categories = [
+    'Cartão',
+    'Energia',
+    'Água',
+    'Internet',
+    'Gasolina',
+    'Telefonia',
+    'Conectividade',
+    'Utilidades',
+    'Moradia',
+    'Outros'
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

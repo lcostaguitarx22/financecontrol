@@ -28,6 +28,11 @@ export const NewTransactionModal: React.FC<NewTransactionModalProps> = ({ onClos
     'Compras',
     'Lazer',
     'Saúde',
+    'Energia',
+    'Água',
+    'Internet',
+    'Gasolina',
+    'Telefonia',
     'Outros',
   ];
 
