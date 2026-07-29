@@ -99,6 +99,23 @@ export async function addCryptoAsset(asset: Omit<CryptoAsset, 'id'>): Promise<Cr
   return newCrypto;
 }
 
+export async function updateCryptoAsset(id: string, assetUpdate: Partial<Omit<CryptoAsset, 'id'>>): Promise<void> {
+  const data = await getAppData();
+  data.cryptos = data.cryptos.map(c => {
+    if (c.id === id) {
+      return { ...c, ...assetUpdate };
+    }
+    return c;
+  });
+  await saveAppData(data);
+}
+
+export async function deleteCryptoAsset(id: string): Promise<void> {
+  const data = await getAppData();
+  data.cryptos = data.cryptos.filter(c => c.id !== id);
+  await saveAppData(data);
+}
+
 export async function addRendimento(entry: Omit<RendimentoEntry, 'id'>): Promise<RendimentoEntry> {
   const data = await getAppData();
   const newEntry: RendimentoEntry = {

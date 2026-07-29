@@ -198,18 +198,24 @@ export const CryptoPage: React.FC = () => {
                 <th className="pb-2">Moeda</th>
                 <th className="pb-2 text-center">Qtde</th>
                 <th className="pb-2 text-right">Preço / Total</th>
+                <th className="pb-2 text-center w-12">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-indigo-50 dark:divide-slate-800/60 text-xs">
               {data.cryptos.length === 0 ? (
                  <tr>
-                   <td colSpan={3} className="py-6 text-center text-slate-400">Nenhum ativo.</td>
+                   <td colSpan={4} className="py-6 text-center text-slate-400">Nenhum ativo.</td>
                  </tr>
               ) : (
                 data.cryptos.map((asset) => {
-                  const livePrice = getLivePrice(asset);
-                  const totalItem = asset.amount * livePrice;
-                  const isLive = !!livePrices?.cryptos[asset.symbol.toUpperCase()];
+                  const symbol = asset.symbol.toUpperCase();
+                  const livePriceBrl = livePrices?.cryptos[symbol]?.brl || asset.unitPriceBrl;
+                  const livePriceUsd = livePrices?.cryptos[symbol]?.usd || (asset.unitPriceBrl / (livePrices?.usdToBrl || 5));
+                  
+                  const totalBrl = asset.amount * livePriceBrl;
+                  const totalUsd = asset.amount * livePriceUsd;
+                  
+                  const isLive = !!livePrices?.cryptos[symbol];
                   
                   return (
                     <tr key={asset.id} className="group hover:bg-indigo-50/50 dark:hover:bg-slate-800/40">
@@ -235,12 +241,42 @@ export const CryptoPage: React.FC = () => {
                         {asset.amount}
                       </td>
                       <td className="py-3 text-right">
-                        <p className="font-extrabold text-slate-900 dark:text-white">
-                          {formatCurrency(totalItem, selectedCurrency)}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                          {formatCurrency(livePrice, selectedCurrency)}/un
-                        </p>
+                        <div className="flex flex-col items-end gap-1">
+                          <p className="font-extrabold text-slate-900 dark:text-white leading-none">
+                            {formatCurrency(totalBrl, 'BRL')}
+                          </p>
+                          <p className="font-semibold text-emerald-600 dark:text-emerald-400 text-[11px] leading-none">
+                            {formatCurrency(totalUsd, 'USD')}
+                          </p>
+                          <p className="text-[9px] text-slate-400 font-medium mt-1">
+                            {formatCurrency(livePriceBrl, 'BRL')} / {formatCurrency(livePriceUsd, 'USD')}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-3 text-center">
+                         <div className="flex flex-col gap-1 items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => {
+                                // @ts-ignore - injetando id temporário no window para o modal capturar
+                                window.currentEditCrypto = asset;
+                                setShowAddModal(true);
+                              }}
+                              className="text-indigo-500 hover:text-indigo-700 p-1"
+                            >
+                              <span className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/50 px-2 py-0.5 rounded">Editar</span>
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Deseja mesmo excluir ${asset.name}?`)) {
+                                  const { deleteCryptoAsset } = await import('../services/storage');
+                                  await deleteCryptoAsset(asset.id);
+                                }
+                              }}
+                              className="text-rose-500 hover:text-rose-700 p-1"
+                            >
+                              <span className="text-[10px] font-bold bg-rose-100 dark:bg-rose-900/50 px-2 py-0.5 rounded">Excluir</span>
+                            </button>
+                         </div>
                       </td>
                     </tr>
                   );
