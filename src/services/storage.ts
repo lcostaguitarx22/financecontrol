@@ -6,13 +6,17 @@
 import { AppData, Bill, CryptoAsset, Transaction, RendimentoEntry } from '../types';
 import { initialAppData } from '../data/mockData';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 
-const docRef = doc(db, 'appData', 'main');
+const getUserDocRef = () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Usuário não autenticado');
+  return doc(db, 'users', user.uid);
+};
 
 export async function getAppData(): Promise<AppData> {
   try {
-    const docSnap = await getDoc(docRef);
+    const docSnap = await getDoc(getUserDocRef());
     if (docSnap.exists()) {
       const parsed = docSnap.data() as AppData;
       return {
@@ -21,7 +25,7 @@ export async function getAppData(): Promise<AppData> {
         settings: { ...initialAppData.settings, ...(parsed.settings || {}) },
       };
     } else {
-      await setDoc(docRef, initialAppData);
+      await setDoc(getUserDocRef(), initialAppData);
       return initialAppData;
     }
   } catch (error) {
@@ -32,7 +36,7 @@ export async function getAppData(): Promise<AppData> {
 
 export async function saveAppData(data: AppData): Promise<void> {
   try {
-    await setDoc(docRef, data);
+    await setDoc(getUserDocRef(), data);
   } catch (error) {
     console.error('Erro ao salvar dados no Firestore:', error);
   }
