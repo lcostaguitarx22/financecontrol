@@ -5,6 +5,7 @@ import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
 import { saveAppData } from '../services/storage';
+import { fetchUSDBRL, fetchCryptoPrices, LivePrices } from '../services/api';
 
 interface AppDataContextProps {
   data: AppData;
@@ -12,6 +13,7 @@ interface AppDataContextProps {
   reloadData: () => void;
   user: User | null;
   loading: boolean;
+  livePrices: LivePrices | null;
 }
 
 const AppDataContext = createContext<AppDataContextProps>({
@@ -20,12 +22,37 @@ const AppDataContext = createContext<AppDataContextProps>({
   reloadData: () => {},
   user: null,
   loading: true,
+  livePrices: null,
 });
 
 export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<AppData>(initialAppData);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [livePrices, setLivePrices] = useState<LivePrices | null>(null);
+
+  const cryptoSymbols = data.cryptos.map(c => c.symbol).join(',');
+
+  useEffect(() => {
+    let mounted = true;
+    
+    async function loadPrices() {
+      if (!user) return;
+      const usdToBrl = await fetchUSDBRL();
+      const symbols = cryptoSymbols ? cryptoSymbols.split(',') : [];
+      const cryptos = symbols.length > 0 ? await fetchCryptoPrices(symbols) : {};
+      
+      if (mounted) {
+        setLivePrices({ usdToBrl, cryptos });
+      }
+    }
+    
+    const timer = setTimeout(loadPrices, 1000); // Evitar spam na API inicial
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }, [cryptoSymbols, user]);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -70,7 +97,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const reloadData = useCallback(() => {}, []);
 
   return (
-    <AppDataContext.Provider value={{ data, setData: updateData, reloadData, user, loading }}>
+    <AppDataContext.Provider value={{ data, setData: updateData, reloadData, user, loading, livePrices }}>
       {children}
     </AppDataContext.Provider>
   );

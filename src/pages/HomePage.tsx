@@ -24,7 +24,7 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendimento }) => {
-  const { data } = useAppData();
+  const { data, livePrices } = useAppData();
   const [period, setPeriod] = useState('Este Mês');
 
   // Sparkline mock data para o card de cripto
@@ -57,14 +57,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     return t.type === 'receita' ? acc + t.amount : acc - t.amount;
   }, 0);
 
-  const saldoCripto = data.cryptos.reduce((acc, c) => acc + (c.amount * c.unitPriceBrl), 0);
+  const saldoCripto = data.cryptos.reduce((acc, c) => {
+    const livePrice = livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
+    return acc + (c.amount * livePrice);
+  }, 0);
   const saldoGeral = saldoCorrente + saldoCripto;
 
   const pendingBills = data.bills.filter((b) => b.status !== 'pago');
   const billsTotal = pendingBills.reduce((acc, b) => acc + b.amount, 0);
 
+  const getLivePriceBrl = (c: any) => livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
+
   const topCrypto = data.cryptos.length > 0 
-    ? [...data.cryptos].sort((a, b) => (b.amount * b.unitPriceBrl) - (a.amount * a.unitPriceBrl))[0]
+    ? [...data.cryptos].sort((a, b) => (b.amount * getLivePriceBrl(b)) - (a.amount * getLivePriceBrl(a)))[0]
     : null;
 
   const cashFlowData = (receitasMes === 0 && despesasMes === 0) 

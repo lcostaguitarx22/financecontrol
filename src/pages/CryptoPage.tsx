@@ -1,10 +1,5 @@
-/**
- * @file CryptoPage.tsx
- * @description Tela Portfólio Cripto dinâmica.
- */
-
 import React, { useState } from 'react';
-import { Plus, SlidersHorizontal, HardDrive, Building2, Flame } from 'lucide-react';
+import { Plus, SlidersHorizontal, HardDrive, Building2, Flame, RefreshCcw, DollarSign } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency } from '../utils/formatters';
@@ -12,21 +7,30 @@ import { Currency } from '../types';
 import { NewCryptoModal } from '../components/modals/NewCryptoModal';
 
 export const CryptoPage: React.FC = () => {
-  const { data } = useAppData();
+  const { data, livePrices } = useAppData();
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(data.settings.currency || 'BRL');
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M'>('1W');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Calcular saldo cripto total real
-  const totalValueBrl = data.cryptos.reduce(
-    (acc, c) => acc + c.amount * c.unitPriceBrl,
+  // Helper para obter preço ao vivo (fallback para o valor salvo)
+  const getLivePrice = (asset: any) => {
+    const symbol = asset.symbol.toUpperCase();
+    if (selectedCurrency === 'BRL') {
+      return livePrices?.cryptos[symbol]?.brl || asset.unitPriceBrl;
+    } else {
+      const usdFallback = asset.unitPriceBrl / (livePrices?.usdToBrl || 5);
+      return livePrices?.cryptos[symbol]?.usd || usdFallback;
+    }
+  };
+
+  const totalValue = data.cryptos.reduce(
+    (acc, c) => acc + c.amount * getLivePrice(c),
     0
   );
 
-  // Fallback pra zero já que não salvamos histórico temporal real de criptos ainda
-  const chartData = totalValueBrl > 0 ? [
-    { t: 'Ontem', v: totalValueBrl * 0.95 },
-    { t: 'Hoje', v: totalValueBrl },
+  const chartData = totalValue > 0 ? [
+    { t: 'Ontem', v: totalValue * 0.95 },
+    { t: 'Hoje', v: totalValue },
   ] : [
     { t: 'Ontem', v: 0 },
     { t: 'Hoje', v: 0 },
@@ -43,35 +47,50 @@ export const CryptoPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="inline-flex p-1 bg-white dark:bg-slate-800 rounded-2xl border border-indigo-100 dark:border-slate-700 shadow-xs">
-        <button
-          onClick={() => setSelectedCurrency('BRL')}
-          className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${
-            selectedCurrency === 'BRL'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200/50 dark:shadow-none'
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-          }`}
-        >
-          BRL
-        </button>
-        <button
-          onClick={() => setSelectedCurrency('USD')}
-          className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${
-            selectedCurrency === 'USD'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200/50 dark:shadow-none'
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-          }`}
-        >
-          USD
-        </button>
+      <div className="flex items-center justify-between">
+        <div className="inline-flex p-1 bg-white dark:bg-slate-800 rounded-2xl border border-indigo-100 dark:border-slate-700 shadow-xs">
+          <button
+            onClick={() => setSelectedCurrency('BRL')}
+            className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${
+              selectedCurrency === 'BRL'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200/50 dark:shadow-none'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+            }`}
+          >
+            BRL
+          </button>
+          <button
+            onClick={() => setSelectedCurrency('USD')}
+            className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${
+              selectedCurrency === 'USD'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200/50 dark:shadow-none'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+            }`}
+          >
+            USD
+          </button>
+        </div>
+
+        {livePrices?.usdToBrl && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-bold border border-emerald-100 dark:border-emerald-900/50">
+            <DollarSign className="w-3.5 h-3.5" />
+            R$ {livePrices.usdToBrl.toFixed(2)}
+          </div>
+        )}
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
-        <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-          Saldo Total
-        </p>
-        <div className="text-3xl font-extrabold text-slate-900 dark:text-white my-2 tracking-tight">
-          {formatCurrency(totalValueBrl, selectedCurrency)}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-10">
+          <RefreshCcw className="w-24 h-24 text-indigo-600" />
+        </div>
+        <div className="relative z-10">
+          <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+            Saldo Total {livePrices ? '(Ao Vivo)' : ''}
+            {livePrices && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>}
+          </p>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-white my-2 tracking-tight">
+            {formatCurrency(totalValue, selectedCurrency)}
+          </div>
         </div>
       </div>
 
@@ -188,7 +207,10 @@ export const CryptoPage: React.FC = () => {
                  </tr>
               ) : (
                 data.cryptos.map((asset) => {
-                  const totalItemBrl = asset.amount * asset.unitPriceBrl;
+                  const livePrice = getLivePrice(asset);
+                  const totalItem = asset.amount * livePrice;
+                  const isLive = !!livePrices?.cryptos[asset.symbol.toUpperCase()];
+                  
                   return (
                     <tr key={asset.id} className="group hover:bg-indigo-50/50 dark:hover:bg-slate-800/40">
                       <td className="py-3">
@@ -204,7 +226,7 @@ export const CryptoPage: React.FC = () => {
                               {asset.name}
                             </p>
                             <p className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400">
-                              {asset.symbol}
+                              {asset.symbol} {isLive && <span className="text-emerald-500">• ao vivo</span>}
                             </p>
                           </div>
                         </div>
@@ -214,10 +236,10 @@ export const CryptoPage: React.FC = () => {
                       </td>
                       <td className="py-3 text-right">
                         <p className="font-extrabold text-slate-900 dark:text-white">
-                          {formatCurrency(totalItemBrl, selectedCurrency)}
+                          {formatCurrency(totalItem, selectedCurrency)}
                         </p>
                         <p className="text-[10px] text-slate-400 font-medium">
-                          {formatCurrency(asset.unitPriceBrl, selectedCurrency)}/un
+                          {formatCurrency(livePrice, selectedCurrency)}/un
                         </p>
                       </td>
                     </tr>
