@@ -32,15 +32,22 @@ interface MorePageProps {
 }
 
 export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
-  const { data } = useAppData();
+  const { data, setData } = useAppData();
   const [isSyncing, setIsSyncing] = useState(false);
 
+  const handleUpdateSettings = (partialSettings: Partial<AppData['settings']>) => {
+    setData((prev) => ({
+      ...prev,
+      settings: { ...prev.settings, ...partialSettings }
+    }));
+  };
+
   const handleCurrencyChange = (curr: Currency) => {
-    updateSettings({ currency: curr });
+    handleUpdateSettings({ currency: curr });
   };
 
   const handleThemeChange = (mode: ThemeMode) => {
-    updateSettings({ theme: mode });
+    handleUpdateSettings({ theme: mode });
     // Aplicar classe dark no documentElement
     if (mode === 'escuro') {
       document.documentElement.classList.add('dark');
@@ -58,7 +65,7 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
   const handleSync = () => {
     setIsSyncing(true);
     setTimeout(() => {
-      updateSettings({ lastSync: `Hoje, ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` });
+      handleUpdateSettings({ lastSync: `Hoje, ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` });
       setIsSyncing(false);
     }, 1200);
   };
@@ -188,7 +195,7 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
           <input
             type="checkbox"
             checked={data.settings.cryptoPriceAlert}
-            onChange={(e) => updateSettings({ cryptoPriceAlert: e.target.checked })}
+            onChange={(e) => handleUpdateSettings({ cryptoPriceAlert: e.target.checked })}
             className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
           />
         </div>
@@ -208,7 +215,7 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
           <input
             type="checkbox"
             checked={data.settings.billDueDateAlert}
-            onChange={(e) => updateSettings({ billDueDateAlert: e.target.checked })}
+            onChange={(e) => handleUpdateSettings({ billDueDateAlert: e.target.checked })}
             className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
           />
         </div>
