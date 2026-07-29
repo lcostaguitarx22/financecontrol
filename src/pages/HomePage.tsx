@@ -277,6 +277,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
                 {formatCurrency(despesasMes, data.settings.currency)}
               </span>
             </div>
+            
+            <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2 mt-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                  Despesas Agendadas
+                </span>
+              </div>
+              <span className="text-xs font-bold text-slate-900 dark:text-white">
+                {formatCurrency(billsTotal, data.settings.currency)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
