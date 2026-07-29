@@ -102,7 +102,7 @@ export const CryptoPage: React.FC = () => {
             {livePrices && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>}
           </p>
           <div className="text-3xl font-extrabold text-slate-900 dark:text-white my-2 tracking-tight">
-            {formatCurrency(totalValue, selectedCurrency)}
+            {formatCurrency(totalValue, selectedCurrency, false)}
           </div>
         </div>
       </div>
@@ -125,7 +125,7 @@ export const CryptoPage: React.FC = () => {
               <XAxis dataKey="t" stroke="#94a3b8" fontSize={10} tickLine={false} />
               <YAxis hide domain={['dataMin', 'dataMax + 100']} />
               <Tooltip
-                formatter={(val: number) => [formatCurrency(val, selectedCurrency), 'Saldo']}
+                formatter={(val: number) => [formatCurrency(val, selectedCurrency, false), 'Saldo']}
                 contentStyle={{
                   backgroundColor: '#0f172a',
                   borderRadius: '16px',
@@ -185,7 +185,7 @@ export const CryptoPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                  {formatCurrency(walletTotal, selectedCurrency)}
+                  {formatCurrency(walletTotal, selectedCurrency, false)}
                 </p>
               </div>
             </div>
@@ -251,7 +251,7 @@ export const CryptoPage: React.FC = () => {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <p className="font-extrabold text-slate-900 dark:text-white leading-none">
-                          {formatCurrency(selectedCurrency === 'BRL' ? totalBrl : totalUsd, selectedCurrency)}
+                          {formatCurrency(selectedCurrency === 'BRL' ? totalBrl : totalUsd, selectedCurrency, false)}
                         </p>
                         <p className="text-[10px] text-slate-500 font-medium mt-1">
                           {asset.amount} {asset.symbol}
@@ -297,7 +297,7 @@ export const CryptoPage: React.FC = () => {
             <div>
               <h4 className="font-bold text-slate-700 dark:text-slate-300">Outros Ativos (Sem Carteira)</h4>
               <p className="text-sm font-extrabold text-slate-600 dark:text-slate-400 mt-0.5">
-                {formatCurrency(unassignedTotal, selectedCurrency)}
+                {formatCurrency(unassignedTotal, selectedCurrency, false)}
               </p>
             </div>
           </div>
@@ -332,7 +332,7 @@ export const CryptoPage: React.FC = () => {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="font-extrabold text-slate-900 dark:text-white leading-none">
-                        {formatCurrency(selectedCurrency === 'BRL' ? totalBrl : totalUsd, selectedCurrency)}
+                        {formatCurrency(selectedCurrency === 'BRL' ? totalBrl : totalUsd, selectedCurrency, false)}
                       </p>
                       <p className="text-[10px] text-slate-500 font-medium mt-1">
                         {asset.amount} {asset.symbol}

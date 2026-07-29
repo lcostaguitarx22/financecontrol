@@ -5,9 +5,9 @@
 
 import { Currency } from '../types';
 
-export function formatCurrency(value: number, currency: Currency = 'BRL'): string {
+export function formatCurrency(value: number, currency: Currency = 'BRL', autoConvert: boolean = true): string {
   const symbol = currency === 'USD' ? '$' : 'R$';
-  const multiplier = currency === 'USD' ? 0.19 : 1; // Conversão aproximada para BRL/USD para demonstração
+  const multiplier = (currency === 'USD' && autoConvert) ? 0.19 : 1; // Conversão aproximada
   const converted = value * multiplier;
 
   const formatted = converted.toLocaleString('pt-BR', {
