@@ -32,13 +32,14 @@ const COMMON_CRYPTOS = [
 ];
 
 export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSuccess }) => {
-  const { livePrices } = useAppData();
+  const { data, livePrices } = useAppData();
   const editMode = !!(window as any).currentEditCrypto;
   const initialAsset = (window as any).currentEditCrypto;
 
   const [name, setName] = useState(initialAsset?.name || '');
   const [symbol, setSymbol] = useState(initialAsset?.symbol || '');
   const [amount, setAmount] = useState(initialAsset?.amount?.toString() || '');
+  const [walletId, setWalletId] = useState(initialAsset?.walletId || '');
   
   // O preço será exibido/digitado em USD
   const initialUsdPrice = editMode 
@@ -126,6 +127,7 @@ export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSucce
       unitPriceBrl: finalPriceBrl,
       change24h: initialAsset?.change24h || 0,
       color: initialAsset?.color || '#3b82f6',
+      walletId: walletId || undefined,
     };
 
     if (editMode) {
@@ -159,6 +161,25 @@ export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSucce
 
         <div className="overflow-y-auto p-5 shrink-0">
           <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* NOVO CAMPO: CARTEIRA */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                Carteira Destino
+              </label>
+              <select
+                value={walletId}
+                onChange={(e) => setWalletId(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                required
+              >
+                <option value="">Selecione uma carteira</option>
+                {data.wallets.map(w => (
+                  <option key={w.id} value={w.id}>{w.name} ({w.type})</option>
+                ))}
+              </select>
+            </div>
+
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2 relative" ref={dropdownRef}>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">

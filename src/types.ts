@@ -28,6 +28,7 @@ export interface CryptoAsset {
   change24h: number; // Porcentagem, ex: 5.2
   iconUrl?: string;
   color?: string;
+  walletId?: string;
 }
 
 export interface Wallet {

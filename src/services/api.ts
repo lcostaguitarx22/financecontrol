@@ -19,35 +19,45 @@ export async function fetchUSDBRL(): Promise<number> {
 }
 
 /**
- * Busca cotações de criptomoedas em Dólar e Real (CryptoCompare)
+ * Busca cotações de criptomoedas em Dólar e Real (Binance)
  * @param symbols Ex: ['BTC', 'ETH', 'SOL']
  */
 export async function fetchCryptoPrices(symbols: string[]): Promise<Record<string, { usd: number; brl: number }>> {
   if (symbols.length === 0) return {};
   
   try {
-    const joinedSymbols = symbols.map(s => s.toUpperCase()).join(',');
-    const url = `https://min-api.cryptocompare.com/data/pricemulti?fsyms=${joinedSymbols}&tsyms=USD,BRL`;
-    
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Falha ao buscar criptos');
-    const data = await res.json();
-    
-    // Formatar o retorno para lowerCase nas chaves de preço
     const result: Record<string, { usd: number; brl: number }> = {};
-    for (const sym of symbols) {
-      const upperSym = sym.toUpperCase();
-      if (data[upperSym]) {
-        result[upperSym] = {
-          usd: data[upperSym].USD || 0,
-          brl: data[upperSym].BRL || 0,
-        };
-      }
-    }
+    const usdToBrl = await fetchUSDBRL();
     
+    // Binance API não permite consulta em lote facilmente pela URL simples sem formato específico,
+    // então faremos consultas paralelas para cada símbolo pareado com USDT
+    const promises = symbols.map(async (sym) => {
+      const upperSym = sym.toUpperCase();
+      // Casos especiais como USDT não precisam buscar o próprio par USDTUSDT, podemos assumir 1.0
+      if (upperSym === 'USDT' || upperSym === 'USDC') {
+        result[upperSym] = { usd: 1.0, brl: usdToBrl };
+        return;
+      }
+
+      try {
+        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${upperSym}USDT`);
+        if (res.ok) {
+          const data = await res.json();
+          const usdPrice = parseFloat(data.price);
+          result[upperSym] = {
+            usd: usdPrice,
+            brl: usdPrice * usdToBrl,
+          };
+        }
+      } catch (err) {
+        console.error(`Erro ao buscar Binance para ${upperSym}:`, err);
+      }
+    });
+
+    await Promise.all(promises);
     return result;
   } catch (error) {
-    console.error('Erro nas cotações de Cripto:', error);
+    console.error('Erro nas cotações de Cripto (Binance):', error);
     return {};
   }
 }

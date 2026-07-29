@@ -3,7 +3,7 @@
  * @description Serviço de persistência utilizando Firebase Firestore para armazenar os dados.
  */
 
-import { AppData, Bill, CryptoAsset, Transaction, RendimentoEntry } from '../types';
+import { AppData, Bill, CryptoAsset, Transaction, RendimentoEntry, Wallet } from '../types';
 import { initialAppData } from '../data/mockData';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
@@ -136,4 +136,40 @@ export async function updateSettings(partialSettings: Partial<AppData['settings'
 
 export async function resetToDemoData(): Promise<void> {
   await saveAppData(initialAppData);
+}
+
+export async function addWallet(wallet: Omit<Wallet, 'id'>): Promise<Wallet> {
+  const data = await getAppData();
+  const newWallet: Wallet = {
+    ...wallet,
+    id: `w-${Date.now()}`,
+  };
+  data.wallets.push(newWallet);
+  await saveAppData(data);
+  return newWallet;
+}
+
+export async function updateWallet(id: string, walletUpdate: Partial<Omit<Wallet, 'id'>>): Promise<void> {
+  const data = await getAppData();
+  data.wallets = data.wallets.map(w => {
+    if (w.id === id) {
+      return { ...w, ...walletUpdate };
+    }
+    return w;
+  });
+  await saveAppData(data);
+}
+
+export async function deleteWallet(id: string): Promise<void> {
+  const data = await getAppData();
+  data.wallets = data.wallets.filter(w => w.id !== id);
+  // Optional: Also delete cryptos belonging to this wallet, or unassign them
+  data.cryptos = data.cryptos.map(c => {
+    if (c.walletId === id) {
+      const { walletId, ...rest } = c;
+      return rest;
+    }
+    return c;
+  });
+  await saveAppData(data);
 }
