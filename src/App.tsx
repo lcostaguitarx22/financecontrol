@@ -10,6 +10,7 @@ import { BottomNav } from './components/BottomNav';
 import { OnboardingModal } from './components/OnboardingModal';
 import { useAppData } from './hooks/useAppData';
 import { TabType } from './types';
+import { LoginPage } from './pages/LoginPage';
 
 // Lazy loading das páginas para máxima performance
 const HomePage = lazy(() =>
@@ -32,14 +33,14 @@ const RendimentoPage = lazy(() =>
 );
 
 export default function App() {
-  const { data } = useAppData();
+  const { data, user, loading } = useAppData();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showRendimentoPage, setShowRendimentoPage] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Inicializar tema e onboarding na primeira execução
   useEffect(() => {
-    if (!data.settings.hasSeenOnboarding) {
+    if (user && !data.settings.hasSeenOnboarding) {
       setShowOnboarding(true);
     }
 
@@ -63,6 +64,19 @@ export default function App() {
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
+        <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Carregando...</span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50/80 via-slate-50 to-pink-50/60 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/40 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-600 selection:text-white">

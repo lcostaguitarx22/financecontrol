@@ -18,7 +18,10 @@ import {
   TrendingUp,
   RotateCcw,
   Sparkles,
+  LogOut
 } from 'lucide-react';
+import { signOut } from 'firebase/auth';
+import { auth } from '../services/firebase';
 import { useAppData } from '../hooks/useAppData';
 import { updateSettings, resetToDemoData } from '../services/storage';
 import { Currency, ThemeMode } from '../types';
@@ -58,6 +61,14 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
       updateSettings({ lastSync: `Hoje, ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` });
       setIsSyncing(false);
     }, 1200);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+    }
   };
 
   return (
@@ -268,6 +279,15 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
           {isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
         </button>
       </div>
+
+      {/* Card 5: Logout */}
+      <button
+        onClick={handleLogout}
+        className="w-full bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-rose-100 dark:border-rose-900/30 flex items-center justify-center gap-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+      >
+        <LogOut className="w-5 h-5" />
+        <span className="text-xs font-bold">Sair da Conta</span>
+      </button>
     </div>
   );
 };

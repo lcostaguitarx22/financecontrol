@@ -1,29 +1,22 @@
-/**
- * @file useAppData.ts
- * @description Hook React para sincronizar os dados com o Firestore em tempo real.
- */
-
 import { useState, useEffect, useCallback } from 'react';
 import { AppData } from '../types';
 import { initialAppData } from '../data/mockData';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { db, auth } from '../services/firebase';
 import { saveAppData } from '../services/storage';
 
 export function useAppData() {
   const [data, setData] = useState<AppData>(initialAppData);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Faz o login anônimo (invisível para o usuário)
-    signInAnonymously(auth).catch((error) => {
-      console.error('Erro no login anônimo:', error);
-    });
-
-    // 2. Aguarda o usuário estar autenticado para buscar seus dados
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        const docRef = doc(db, 'users', user.uid);
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      
+      if (currentUser) {
+        const docRef = doc(db, 'users', currentUser.uid);
         
         const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
@@ -31,13 +24,16 @@ export function useAppData() {
           } else {
             setDoc(docRef, initialAppData);
           }
+          setLoading(false);
         }, (error) => {
           console.error('Erro ao escutar Firestore:', error);
+          setLoading(false);
         });
 
         return () => unsubscribeSnapshot();
       } else {
         setData(initialAppData);
+        setLoading(false);
       }
     });
 
@@ -52,5 +48,5 @@ export function useAppData() {
 
   const reloadData = useCallback(() => {}, []);
 
-  return { data, setData: updateData, reloadData };
+  return { data, setData: updateData, reloadData, user, loading };
 }
