@@ -15,13 +15,16 @@ interface HeaderProps {
   onBack?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title = 'FinanceControl', showBack, onBack }) => {
-  const { data } = useAppData();
+export const Header: React.FC<HeaderProps> = ({ title = 'Finance Control', showBack, onBack }) => {
+  const { data, user } = useAppData();
   const [showNotifications, setShowNotifications] = useState(false);
 
   // Calcular número de alertas pendentes
   const pendingBillsCount = data.bills.filter((b) => b.status !== 'pago').length;
   const urgentCount = data.bills.filter((b) => b.isUrgent || b.status === 'atrasado').length;
+
+  const userName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
+  const userPhoto = user?.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
   return (
     <>
@@ -40,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({ title = 'FinanceControl', showBa
           ) : (
             <div className="relative group cursor-pointer" id="header-user-avatar">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                src={userPhoto}
                 alt="Perfil do Usuário"
                 className="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/80 shadow-md shadow-indigo-200/50 dark:shadow-none group-hover:scale-105 transition-transform"
                 referrerPolicy="no-referrer"
@@ -49,8 +52,13 @@ export const Header: React.FC<HeaderProps> = ({ title = 'FinanceControl', showBa
             </div>
           )}
 
-          <div>
-            <h1 className="font-extrabold text-indigo-600 dark:text-indigo-400 text-lg tracking-tight flex items-center gap-1.5">
+          <div className="flex flex-col justify-center">
+            {!showBack && (
+              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">
+                Seja bem vindo Sr. {userName}
+              </p>
+            )}
+            <h1 className="font-extrabold text-indigo-600 dark:text-indigo-400 text-lg tracking-tight flex items-center gap-1.5 leading-none">
               {title}
             </h1>
           </div>

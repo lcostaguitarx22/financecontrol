@@ -84,7 +84,7 @@ export default function App() {
       <div className="max-w-lg mx-auto min-h-screen flex flex-col relative bg-white/70 dark:bg-slate-950/90 backdrop-blur-3xl shadow-2xl shadow-indigo-200/50 dark:shadow-none sm:border-x sm:border-indigo-100/60 dark:sm:border-slate-800/60">
         {/* Cabeçalho */}
         <Header
-          title={showRendimentoPage ? 'Resumo de Rendimentos' : 'FinanceControl'}
+          title={showRendimentoPage ? 'Resumo de Rendimentos' : 'Finance Control'}
           showBack={showRendimentoPage}
           onBack={() => setShowRendimentoPage(false)}
         />
