@@ -13,17 +13,28 @@ interface NewBillModalProps {
 }
 
 export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }) => {
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
+  const initialBill = (window as any).currentEditBill;
+  const editMode = !!initialBill;
+
+  const [title, setTitle] = useState(initialBill?.title || '');
+  const [amount, setAmount] = useState(initialBill?.amount?.toString() || '');
   
+  // Helper para converter DD/MM/YYYY para YYYY-MM-DD
+  const parseDateToInput = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return dateStr;
+  };
+
   // Define a data de hoje no formato YYYY-MM-DD
   const getTodayFormatted = () => {
     return new Date().toISOString().split('T')[0];
   };
   
-  const [dueDate, setDueDate] = useState(getTodayFormatted());
-  const [category, setCategory] = useState('Utilidades');
-  const [paymentMethod, setPaymentMethod] = useState<'saldo' | 'pix' | 'cartao'>('saldo');
+  const [dueDate, setDueDate] = useState(editMode ? parseDateToInput(initialBill.dueDate) : getTodayFormatted());
+  const [category, setCategory] = useState(initialBill?.category || 'Utilidades');
+  const [paymentMethod, setPaymentMethod] = useState<'saldo' | 'pix' | 'cartao'>(initialBill?.paymentMethod || 'saldo');
 
   const categories = [
     'Cartão',
@@ -38,7 +49,7 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
     'Outros'
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseFloat(amount.replace(',', '.'));
     if (!title || isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -54,28 +65,27 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
     const [year, month, day] = dueDate.split('-');
     const formattedDateForList = `${day}/${month}/${year}`;
     
-    const isCreditCard = paymentMethod === 'cartao';
-    const finalStatus = isCreditCard ? 'pendente' : 'pago';
+    // Status agora sempre inicia pendente (mesmo saldo/pix), para ser abatido pelo Auto-Payer
+    const finalStatus = editMode ? initialBill.status : 'pendente';
 
-    addBill({
+    const billData = {
       title,
       amount: parsedAmount,
       dueDate: formattedDateForList, 
-      status: finalStatus,
+      status: finalStatus as 'pendente' | 'pago',
       category,
       paymentMethod,
-      iconName: 'CreditCard',
-      isUrgent: isCreditCard ? isUrgent : false,
-    });
+      iconName: paymentMethod === 'cartao' ? 'CreditCard' : 'FileText',
+      isUrgent,
+    };
 
-    if (!isCreditCard) {
-      addTransaction({
-        description: `Pgto: ${title}`,
-        amount: parsedAmount,
-        type: 'despesa',
-        category,
-        date: dueDate,
-      });
+    if (editMode) {
+      const { updateBill } = await import('../../services/storage');
+      await updateBill(initialBill.id, billData);
+      (window as any).currentEditBill = null;
+    } else {
+      const { addBill } = await import('../../services/storage');
+      await addBill(billData);
     }
 
     if (onSuccess) onSuccess();
@@ -86,7 +96,9 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-indigo-100 dark:border-slate-800 overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-indigo-50 dark:border-slate-800">
-          <h3 className="font-bold text-slate-900 dark:text-white text-base">Nova Conta a Pagar</h3>
+          <h3 className="font-bold text-slate-900 dark:text-white text-base">
+            {editMode ? 'Editar Conta' : 'Nova Conta a Pagar'}
+          </h3>
           <button
             onClick={onClose}
             id="new-bill-close"
@@ -178,7 +190,7 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
             id="new-bill-submit"
             className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl text-xs transition-all shadow-md shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2 mt-2"
           >
-            <Check className="w-4 h-4" /> Cadastrar Conta
+            <Check className="w-4 h-4" /> {editMode ? 'Salvar Alterações' : 'Cadastrar Conta'}
           </button>
         </form>
       </div>

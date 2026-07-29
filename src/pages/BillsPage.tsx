@@ -18,6 +18,8 @@ import {
   Sparkles,
   Clock,
   Trash2,
+  FileText,
+  Edit2
 } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency } from '../utils/formatters';
@@ -256,9 +258,20 @@ export const BillsPage: React.FC = () => {
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       {bill.title}
-                      <button onClick={() => deleteBill(bill.id)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-pink-600 transition-opacity">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <span className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                        <button 
+                          onClick={() => {
+                            (window as any).currentEditBill = bill;
+                            setShowNewBillModal(true);
+                          }} 
+                          className="text-slate-400 hover:text-indigo-600"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => deleteBill(bill.id)} className="text-slate-400 hover:text-pink-600">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {getStatusBadge(bill.status, bill.dueDate)}

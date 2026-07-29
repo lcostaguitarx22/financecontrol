@@ -51,6 +51,7 @@ export interface Bill {
   paymentMethod?: 'saldo' | 'pix' | 'cartao';
   iconName?: string;
   isUrgent?: boolean;
+  transactionId?: string;
 }
 
 export interface CategoryBudget {

@@ -72,19 +72,58 @@ export async function addBill(bill: Omit<Bill, 'id'>): Promise<Bill> {
 
 export async function toggleBillPaid(id: string): Promise<void> {
   const data = await getAppData();
+  let transactionToAdd: Transaction | null = null;
+  let transactionToRemove: string | null = null;
+
   data.bills = data.bills.map((b) => {
     if (b.id === id) {
-      const nextStatus = b.status === 'pago' ? 'pendente' : 'pago';
-      return { ...b, status: nextStatus };
+      if (b.status === 'pago') {
+        // Mudando para pendente
+        if (b.transactionId) {
+          transactionToRemove = b.transactionId;
+        }
+        return { ...b, status: 'pendente', transactionId: undefined };
+      } else {
+        // Mudando para pago
+        const newTxId = `tx-${Date.now()}`;
+        transactionToAdd = {
+          id: newTxId,
+          description: `Pgto Manual: ${b.title}`,
+          amount: b.amount,
+          type: 'despesa',
+          category: b.category || 'Utilidades',
+          date: new Date().toISOString().split('T')[0],
+        };
+        return { ...b, status: 'pago', transactionId: newTxId };
+      }
     }
     return b;
   });
+
+  if (transactionToRemove) {
+    data.transactions = data.transactions.filter(t => t.id !== transactionToRemove);
+  }
+  if (transactionToAdd) {
+    data.transactions.unshift(transactionToAdd);
+  }
+
   await saveAppData(data);
 }
 
 export async function deleteBill(id: string): Promise<void> {
   const data = await getAppData();
   data.bills = data.bills.filter((b) => b.id !== id);
+  await saveAppData(data);
+}
+
+export async function updateBill(id: string, billUpdate: Partial<Omit<Bill, 'id'>>): Promise<void> {
+  const data = await getAppData();
+  data.bills = data.bills.map(b => {
+    if (b.id === id) {
+      return { ...b, ...billUpdate };
+    }
+    return b;
+  });
   await saveAppData(data);
 }
 

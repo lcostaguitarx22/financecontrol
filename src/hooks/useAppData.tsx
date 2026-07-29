@@ -64,11 +64,52 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
             const dbData = docSnap.data();
-            setData({
+            let loadedData = {
               ...initialAppData,
               ...dbData,
               settings: { ...initialAppData.settings, ...(dbData.settings || {}) }
-            } as AppData);
+            } as AppData;
+            
+            // --- INÍCIO AUTO-PAYER ---
+            // Verifica se há contas pendentes que atingiram a data de vencimento
+            let needsUpdate = false;
+            const todayStr = new Date().toISOString().split('T')[0];
+            const updatedBills = [...loadedData.bills];
+            const newTransactions = [];
+
+            for (let i = 0; i < updatedBills.length; i++) {
+              const bill = updatedBills[i];
+              if (bill.status === 'pendente') {
+                const parts = bill.dueDate.split('/');
+                if (parts.length === 3) {
+                  const billDateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                  if (billDateStr <= todayStr) {
+                    const txId = `tx-auto-${Date.now()}-${i}`;
+                    updatedBills[i] = { ...bill, status: 'pago', transactionId: txId };
+                    newTransactions.push({
+                      id: txId,
+                      description: `Pgto Automático: ${bill.title}`,
+                      amount: bill.amount,
+                      type: 'despesa' as const,
+                      category: bill.category || 'Utilidades',
+                      date: billDateStr,
+                    });
+                    needsUpdate = true;
+                  }
+                }
+              }
+            }
+
+            if (needsUpdate) {
+              loadedData.bills = updatedBills;
+              // adiciona as novas transações no topo
+              loadedData.transactions = [...newTransactions, ...loadedData.transactions];
+              // Atualiza o firestore silenciosamente
+              setDoc(docRef, loadedData);
+            }
+            // --- FIM AUTO-PAYER ---
+
+            setData(loadedData);
           } else {
             setDoc(docRef, initialAppData);
           }
