@@ -36,7 +36,12 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
         const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
-            setData(docSnap.data() as AppData);
+            const dbData = docSnap.data();
+            setData({
+              ...initialAppData,
+              ...dbData,
+              settings: { ...initialAppData.settings, ...(dbData.settings || {}) }
+            } as AppData);
           } else {
             setDoc(docRef, initialAppData);
           }
