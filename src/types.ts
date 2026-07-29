@@ -47,6 +47,7 @@ export interface Bill {
   dueDate: string; // Ex: "2023-11-15" ou "Vence Hoje"
   status: BillStatus;
   category: string;
+  paymentMethod?: 'saldo' | 'pix' | 'cartao';
   iconName?: string;
   isUrgent?: boolean;
 }

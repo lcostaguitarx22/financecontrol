@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { X, Check } from 'lucide-react';
-import { addBill } from '../../services/storage';
+import { addBill, addTransaction } from '../../services/storage';
 
 interface NewBillModalProps {
   onClose: () => void;
@@ -23,6 +23,7 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
   
   const [dueDate, setDueDate] = useState(getTodayFormatted());
   const [category, setCategory] = useState('Utilidades');
+  const [paymentMethod, setPaymentMethod] = useState<'saldo' | 'pix' | 'cartao'>('saldo');
 
   const categories = [
     'Cartão',
@@ -49,19 +50,33 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     const isUrgent = dueDate === today || dueDate === tomorrow || dueDate < today;
 
-    // Formata a data para exibir melhor (opcional, o sistema de formatação da lista também fará isso)
+    // Formata a data para exibir melhor
     const [year, month, day] = dueDate.split('-');
     const formattedDateForList = `${day}/${month}/${year}`;
+    
+    const isCreditCard = paymentMethod === 'cartao';
+    const finalStatus = isCreditCard ? 'pendente' : 'pago';
 
     addBill({
       title,
       amount: parsedAmount,
-      dueDate: formattedDateForList, // Salva formatado ou pode salvar YYYY-MM-DD
-      status: 'pendente',
+      dueDate: formattedDateForList, 
+      status: finalStatus,
       category,
+      paymentMethod,
       iconName: 'CreditCard',
-      isUrgent,
+      isUrgent: isCreditCard ? isUrgent : false,
     });
+
+    if (!isCreditCard) {
+      addTransaction({
+        description: `Pgto: ${title}`,
+        amount: parsedAmount,
+        type: 'despesa',
+        category,
+        date: dueDate,
+      });
+    }
 
     if (onSuccess) onSuccess();
     onClose();
@@ -124,6 +139,21 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
                 required
               />
             </div>
+          </div>
+          
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Método de Pagamento
+            </label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as 'saldo' | 'pix' | 'cartao')}
+              className="w-full px-4 py-3 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="saldo">Saldo em Conta</option>
+              <option value="pix">Pix</option>
+              <option value="cartao">Cartão de Crédito</option>
+            </select>
           </div>
 
           <div>

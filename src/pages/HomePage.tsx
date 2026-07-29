@@ -61,6 +61,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     const livePrice = livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
     return acc + (c.amount * livePrice);
   }, 0);
+  const faturaCartao = data.bills
+    .filter((b) => b.paymentMethod === 'cartao' && b.status !== 'pago')
+    .reduce((acc, b) => acc + b.amount, 0);
+
   const saldoGeral = saldoCorrente + saldoCripto;
 
   const pendingBills = data.bills.filter((b) => b.status !== 'pago');
@@ -126,16 +130,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
           {formatCurrency(saldoGeral, data.settings.currency)}
         </div>
 
-        <div className="pt-3 border-t border-indigo-500/40 grid grid-cols-2 gap-4">
+        <div className="pt-3 border-t border-indigo-500/40 grid grid-cols-3 gap-2">
           <div>
-            <p className="text-xs text-indigo-200 font-medium">Conta Corrente</p>
-            <p className="text-base font-bold text-white mt-0.5">
+            <p className="text-[10px] text-indigo-200 font-medium">Conta Corrente</p>
+            <p className="text-sm font-bold text-white mt-0.5 truncate">
               {formatCurrency(saldoCorrente, data.settings.currency)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-indigo-200 font-medium">Cripto (Convertido)</p>
-            <p className="text-base font-bold text-white mt-0.5">
+            <p className="text-[10px] text-indigo-200 font-medium">Fatura (Cartão)</p>
+            <p className="text-sm font-bold text-pink-200 mt-0.5 truncate">
+              {formatCurrency(faturaCartao, data.settings.currency)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-indigo-200 font-medium">Cripto</p>
+            <p className="text-sm font-bold text-white mt-0.5 truncate">
               {formatCurrency(saldoCripto, data.settings.currency)}
             </p>
           </div>
