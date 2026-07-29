@@ -15,7 +15,13 @@ interface NewBillModalProps {
 export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }) => {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState('Vence hoje');
+  
+  // Define a data de hoje no formato YYYY-MM-DD
+  const getTodayFormatted = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+  
+  const [dueDate, setDueDate] = useState(getTodayFormatted());
   const [category, setCategory] = useState('Utilidades');
 
   const categories = ['Cartão', 'Conectividade', 'Utilidades', 'Moradia', 'Outros'];
@@ -28,14 +34,22 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
       return;
     }
 
+    const today = getTodayFormatted();
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const isUrgent = dueDate === today || dueDate === tomorrow || dueDate < today;
+
+    // Formata a data para exibir melhor (opcional, o sistema de formatação da lista também fará isso)
+    const [year, month, day] = dueDate.split('-');
+    const formattedDateForList = `${day}/${month}/${year}`;
+
     addBill({
       title,
       amount: parsedAmount,
-      dueDate,
+      dueDate: formattedDateForList, // Salva formatado ou pode salvar YYYY-MM-DD
       status: 'pendente',
       category,
       iconName: 'CreditCard',
-      isUrgent: dueDate.includes('hoje') || dueDate.includes('amanhã'),
+      isUrgent,
     });
 
     if (onSuccess) onSuccess();
@@ -92,8 +106,7 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
                 Vencimento
               </label>
               <input
-                type="text"
-                placeholder="Ex: Vence hoje, 25 Nov"
+                type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full px-4 py-3 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
