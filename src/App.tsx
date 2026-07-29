@@ -58,6 +58,14 @@ export default function App() {
     }
   }, [data.settings.hasSeenOnboarding, data.settings.theme]);
 
+  // Resetar a tab para home quando o usuário logar
+  useEffect(() => {
+    if (user) {
+      setActiveTab('home');
+      setShowRendimentoPage(false);
+    }
+  }, [user]);
+
   // Handler de navegação de abas
   const handleTabChange = (tab: TabType) => {
     setShowRendimentoPage(false);
