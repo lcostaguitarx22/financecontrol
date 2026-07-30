@@ -25,12 +25,66 @@ import { useAppData } from '../hooks/useAppData';
 import { formatCurrency } from '../utils/formatters';
 import { toggleBillPaid, deleteBill } from '../services/storage';
 import { NewBillModal } from '../components/modals/NewBillModal';
+import { DayDetailsModal, CalendarEvent } from '../components/modals/DayDetailsModal';
 
 export const BillsPage: React.FC = () => {
   const { data } = useAppData();
   const [filter, setFilter] = useState<'Todas' | 'Pendentes'>('Todas');
   const [showNewBillModal, setShowNewBillModal] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<{ date: string; events: CalendarEvent[] } | null>(null);
+
+  // Calendário
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+  const paymentDay = Math.min(30, daysInMonth);
+  const currentYyyyMm = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+
+  const getEventsForDay = (day: number): CalendarEvent[] => {
+    const events: CalendarEvent[] = [];
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayStr = String(day).padStart(2, '0');
+
+    // Contas a pagar
+    data.bills.forEach(b => {
+      if (b.dueDate === dateStr) {
+        events.push({ id: b.id, title: b.title, amount: b.amount, type: 'debito', source: 'conta', status: b.status });
+      }
+    });
+
+    // Contas fixas (dueDate pode ser YYYY-MM-DD)
+    data.fixedBills.forEach(b => {
+      if (b.dueDate && b.dueDate.split('-')[2] === dayStr) {
+        events.push({ id: b.id, title: b.title, amount: b.amount, type: 'debito', source: 'conta_fixa' });
+      }
+    });
+
+    // Transações
+    data.transactions.forEach(t => {
+      if (t.date === dateStr) {
+        events.push({ id: t.id, title: t.description, amount: t.amount, type: t.type === 'receita' ? 'renda' : 'debito', source: 'transacao' });
+      }
+    });
+
+    // Salário (apenas no paymentDay)
+    if (day === paymentDay) {
+      const sal = data.monthlySalaries?.[currentYyyyMm] ?? data.salary;
+      if (sal && sal > 0) {
+        events.push({ id: 'salary-' + currentYyyyMm, title: 'Salário Mensal Fixo', amount: sal, type: 'renda', source: 'salario' });
+      }
+    }
+
+    return events;
+  };
+
+  const handleDayClick = (day: number) => {
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const events = getEventsForDay(day);
+    setSelectedDay({ date: dateStr, events });
+  };
 
   // Totais reais calculados com base em data.bills
   const totalBills = data.bills.reduce((acc, b) => acc + b.amount, 0);
@@ -122,21 +176,31 @@ export const BillsPage: React.FC = () => {
             <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center font-medium">
-            {Array.from({ length: 30 }).map((_, i) => {
+            {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+              <div key={`empty-${i}`} className="py-1.5" />
+            ))}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
-              const hasBill = data.bills.some(b => {
-                const bDay = parseInt(b.dueDate.split('-')[2]); // assumindo YYYY-MM-DD
-                return bDay === day;
-              });
+              const isToday = day === today.getDate();
+              const events = getEventsForDay(day);
+              const hasDebito = events.some(e => e.type === 'debito');
+              const hasRenda = events.some(e => e.type === 'renda');
+
               return (
                 <div
                   key={day}
-                  className={`py-1.5 rounded-lg text-xs ${hasBill
-                    ? 'bg-rose-500 text-white font-bold ring-2 ring-rose-200'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
+                  onClick={() => handleDayClick(day)}
+                  className={`py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${
+                    isToday 
+                      ? 'bg-indigo-600 text-white font-bold shadow-md' 
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
                 >
-                  {day}
+                  <span>{day}</span>
+                  <div className="flex items-center gap-0.5 mt-0.5 h-1">
+                    {hasRenda && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-emerald-500'}`} />}
+                    {hasDebito && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-300' : 'bg-rose-500'}`} />}
+                  </div>
                 </div>
               );
             })}
@@ -320,6 +384,14 @@ export const BillsPage: React.FC = () => {
         </div>
       </div>
 
+      {selectedDay && (
+        <DayDetailsModal 
+          date={selectedDay.date} 
+          events={selectedDay.events} 
+          currency={data.settings.currency} 
+          onClose={() => setSelectedDay(null)} 
+        />
+      )}
       {showNewBillModal && <NewBillModal onClose={() => setShowNewBillModal(false)} />}
     </div>
   );

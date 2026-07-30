@@ -72,19 +72,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const getLivePriceBrl = (c: any) => livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
 
-  const topCrypto = data.cryptos.length > 0 
+  const topCrypto = data.cryptos.length > 0
     ? [...data.cryptos].sort((a, b) => (b.amount * getLivePriceBrl(b)) - (a.amount * getLivePriceBrl(a)))[0]
     : null;
 
-  const cashFlowData = (receitasMes === 0 && despesasMes === 0) 
-    ? [{ name: 'Vazio', value: 1, color: '#e2e8f0' }] 
+  const cashFlowData = (receitasMes === 0 && despesasMes === 0)
+    ? [{ name: 'Vazio', value: 1, color: '#e2e8f0' }]
     : [
-        { name: 'Receitas', value: receitasMes, color: '#6366f1' },
-        { name: 'Despesas', value: despesasMes, color: '#ec4899' },
-      ];
+      { name: 'Receitas', value: receitasMes, color: '#6366f1' },
+      { name: 'Despesas', value: despesasMes, color: '#ec4899' },
+    ];
 
   const savingsRate = receitasMes > 0 ? ((receitasMes - despesasMes) / receitasMes) * 100 : 0;
-  
+
   return (
     <div className="space-y-5 pb-24 animate-in fade-in duration-300">
       {/* Título & Seletor de Período */}
@@ -113,7 +113,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
       {/* Card 1: Saldo Geral Consolidado */}
       <div
         onClick={onOpenRendimento}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white p-6 shadow-xl shadow-indigo-200/60 dark:shadow-none border border-indigo-500/30 cursor-pointer group transition-transform active:scale-[0.99]"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white p-6 shadow-xl shadow-indigo-200/60 dark:shadow-none border border-indigo-500/30 cursor-pointer group transition-transform active:scale-[0.99]"
       >
         <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
 
@@ -126,11 +126,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
           </span>
         </div>
 
-        <div className="text-3xl font-extrabold text-white my-3 tracking-tight">
+        <div className="text-xl font-extrabold text-white my-3 tracking-tight">
           {formatCurrency(saldoGeral, data.settings.currency)}
         </div>
 
-        <div className="pt-3 border-t border-indigo-500/40 grid grid-cols-3 gap-2">
+        <div className="pt-3 border-t border-indigo-500/40 grid grid-cols-4 gap-2">
           <div>
             <p className="text-[10px] text-indigo-200 font-medium">Conta Corrente</p>
             <p className="text-sm font-bold text-white mt-0.5 truncate">
@@ -141,6 +141,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             <p className="text-[10px] text-indigo-200 font-medium">Fatura (Cartão)</p>
             <p className="text-sm font-bold text-pink-200 mt-0.5 truncate">
               {formatCurrency(faturaCartao, data.settings.currency)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-indigo-200 font-medium">Contas (Boletos)</p>
+            <p className="text-sm font-bold text-pink-200 mt-0.5 truncate">
+              {formatCurrency(billsTotal - faturaCartao, data.settings.currency)}
             </p>
           </div>
           <div>
@@ -196,11 +202,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             {topCrypto ? `${topCrypto.amount} ${topCrypto.symbol}` : 'Nenhum ativo'}
           </span>
           {topCrypto && (
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-              topCrypto.change24h >= 0 
-                ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/60'
-                : 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/60'
-            }`}>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${topCrypto.change24h >= 0
+              ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/60'
+              : 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/60'
+              }`}>
               {topCrypto.change24h >= 0 ? '↑' : '↓'} {topCrypto.change24h}% (24h)
             </span>
           )}
@@ -277,7 +282,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
                 {formatCurrency(despesasMes, data.settings.currency)}
               </span>
             </div>
-            
+
             <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2 mt-1">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
