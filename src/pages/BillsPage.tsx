@@ -36,12 +36,25 @@ export const BillsPage: React.FC = () => {
 
   // Calendário
   const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth();
+  const [calendarDate, setCalendarDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+
+  const currentYear = calendarDate.getFullYear();
+  const currentMonth = calendarDate.getMonth();
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
   const paymentDay = Math.min(30, daysInMonth);
   const currentYyyyMm = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+
+  const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const monthName = monthsNames[currentMonth];
+
+  const handlePrevMonth = () => {
+    setCalendarDate(new Date(currentYear, currentMonth - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCalendarDate(new Date(currentYear, currentMonth + 1, 1));
+  };
 
   const getEventsForDay = (day: number): CalendarEvent[] => {
     const events: CalendarEvent[] = [];
@@ -171,7 +184,14 @@ export const BillsPage: React.FC = () => {
 
       {showCalendarView && (
         <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs space-y-2">
-          <p className="font-bold text-slate-900 dark:text-white mb-2">Visão Calendário</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="font-bold text-slate-900 dark:text-white">Visão Calendário</p>
+            <div className="flex items-center gap-2">
+              <button onClick={handlePrevMonth} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 font-bold">&lt;</button>
+              <span className="font-semibold text-slate-700 dark:text-slate-300 min-w-[80px] text-center">{monthName} {currentYear}</span>
+              <button onClick={handleNextMonth} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 font-bold">&gt;</button>
+            </div>
+          </div>
           <div className="grid grid-cols-7 gap-1 text-center font-semibold text-slate-400 text-[10px]">
             <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
           </div>
@@ -181,7 +201,7 @@ export const BillsPage: React.FC = () => {
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
-              const isToday = day === today.getDate();
+              const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
               const events = getEventsForDay(day);
               const hasDebito = events.some(e => e.type === 'debito');
               const hasRenda = events.some(e => e.type === 'renda');
