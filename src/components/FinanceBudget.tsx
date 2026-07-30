@@ -22,6 +22,14 @@ export const FinanceBudget: React.FC = () => {
   const [isEditingExtra, setIsEditingExtra] = useState(false);
   const [tempExtra, setTempExtra] = useState(currentExtra.toString());
 
+  const categories = data.settings.categories || [
+    'Água', 'Assinaturas', 'Dízimo', 'Energia', 'Internet',
+    'IPTU', 'IPVA', 'Streaming', 'Telefonia', 'Parcela de Carro',
+    'Parcela Terreno', 'Outros'
+  ];
+  const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
   const [showNewBillForm, setShowNewBillForm] = useState(false);
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
   
@@ -112,7 +120,27 @@ export const FinanceBudget: React.FC = () => {
       setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: '', paymentSource: '', recurrence: 'mensal' });
       setShowNewBillForm(false);
       setEditingBillId(null);
+      setIsAddingNewCategory(false);
+      setNewCategoryName('');
     }
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    const currentCats = [...categories];
+    if (!currentCats.includes(newCategoryName)) {
+      currentCats.push(newCategoryName);
+      setData((prev) => ({
+        ...prev,
+        settings: {
+          ...prev.settings,
+          categories: currentCats
+        }
+      }));
+    }
+    setNewBill({ ...newBill, category: newCategoryName });
+    setIsAddingNewCategory(false);
+    setNewCategoryName('');
   };
 
   const handleDeleteBill = (id: string) => {
@@ -378,22 +406,42 @@ export const FinanceBudget: React.FC = () => {
               <div>
                 <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Categoria</label>
                 <select
-                  value={newBill.category}
-                  onChange={(e) => setNewBill({ ...newBill, category: e.target.value })}
+                  value={isAddingNewCategory ? '__NEW__' : newBill.category}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW__') {
+                      setIsAddingNewCategory(true);
+                      setNewBill({ ...newBill, category: '' });
+                    } else {
+                      setIsAddingNewCategory(false);
+                      setNewBill({ ...newBill, category: e.target.value });
+                    }
+                  }}
                   className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 >
-                  <option value="Água">Água</option>
-                  <option value="Assinaturas">Assinaturas</option>
-                  <option value="Energia">Energia</option>
-                  <option value="Internet">Internet</option>
-                  <option value="IPTU">IPTU</option>
-                  <option value="IPVA">IPVA</option>
-                  <option value="Streaming">Streaming</option>
-                  <option value="Telefonia">Telefonia</option>
-                  <option value="Parcela Terreno">Parcela Terreno</option>
-                  <option value="Parcela Veículo">Parcela Veículo</option>
-                  <option value="Outros">Outros</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="__NEW__">➕ Nova Categoria...</option>
                 </select>
+                
+                {isAddingNewCategory && (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nome da categoria"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="flex-1 text-sm p-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCategory}
+                      className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-colors"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -87,6 +87,7 @@ export interface AppSettings {
   billDueDateAlert: boolean;
   lastSync: string;
   hasSeenOnboarding: boolean;
+  categories: string[];
 }
 
 export interface AppData {

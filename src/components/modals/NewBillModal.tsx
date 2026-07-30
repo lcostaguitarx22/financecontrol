@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { X, Check } from 'lucide-react';
-import { addBill, addTransaction } from '../../services/storage';
+import { addBill, addTransaction, getAppData, saveAppData } from '../../services/storage';
 
 interface NewBillModalProps {
   onClose: () => void;
@@ -36,18 +36,36 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
   const [category, setCategory] = useState(initialBill?.category || 'Utilidades');
   const [paymentMethod, setPaymentMethod] = useState<'saldo' | 'pix' | 'cartao'>(initialBill?.paymentMethod || 'saldo');
 
-  const categories = [
-    'Cartão',
-    'Energia',
-    'Água',
-    'Internet',
-    'Gasolina',
-    'Telefonia',
-    'Conectividade',
-    'Utilidades',
-    'Moradia',
-    'Outros'
-  ];
+  const [categories, setCategories] = useState<string[]>([
+    'Água', 'Assinaturas', 'Dízimo', 'Energia', 'Internet',
+    'IPTU', 'IPVA', 'Streaming', 'Telefonia', 'Parcela de Carro',
+    'Parcela Terreno', 'Outros'
+  ]);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  React.useEffect(() => {
+    getAppData().then(data => {
+      if (data.settings?.categories && data.settings.categories.length > 0) {
+        setCategories(data.settings.categories);
+      }
+    });
+  }, []);
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    const data = await getAppData();
+    const currentCats = data.settings?.categories || categories;
+    if (!currentCats.includes(newCategoryName)) {
+      currentCats.push(newCategoryName);
+      data.settings.categories = currentCats;
+      await saveAppData(data);
+    }
+    setCategories(currentCats);
+    setCategory(newCategoryName);
+    setIsAddingNew(false);
+    setNewCategoryName('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,8 +191,16 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
               Categoria
             </label>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={isAddingNew ? '__NEW__' : category}
+              onChange={(e) => {
+                if (e.target.value === '__NEW__') {
+                  setIsAddingNew(true);
+                  setCategory('');
+                } else {
+                  setIsAddingNew(false);
+                  setCategory(e.target.value);
+                }
+              }}
               className="w-full px-4 py-3 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
               {categories.map((cat) => (
@@ -182,7 +208,27 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
                   {cat}
                 </option>
               ))}
+              <option value="__NEW__">➕ Nova Categoria...</option>
             </select>
+            
+            {isAddingNew && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Nome da categoria"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCategory}
+                  className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-colors"
+                >
+                  Adicionar
+                </button>
+              </div>
+            )}
           </div>
 
           <button

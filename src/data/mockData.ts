@@ -13,6 +13,11 @@ export const initialAppData: AppData = {
     billDueDateAlert: false,
     lastSync: 'Hoje, 14:30',
     hasSeenOnboarding: false,
+    categories: [
+      'Água', 'Assinaturas', 'Dízimo', 'Energia', 'Internet', 
+      'IPTU', 'IPVA', 'Streaming', 'Telefonia', 'Parcela de Carro', 
+      'Parcela Terreno', 'Outros'
+    ],
   },
   transactions: [],
   cryptos: [],

@@ -9,19 +9,28 @@ import {
   Moon,
   Sun,
   Laptop,
+  Smartphone,
+  Shield,
+  Download,
   Bell,
-  Plus,
-  RefreshCw,
-  Utensils,
+  Trash2,
+  ArrowRight,
+  UserCircle,
   Car,
+  Lightbulb,
+  GlassWater as GlassWaterIcon,
+  Network,
   Home,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Utensils,
   TrendingUp,
   RotateCcw,
   Sparkles,
-  LogOut,
-  Lightbulb,
-  GlassWaterIcon,
-  Network
+  X,
+  RefreshCw,
+  LogOut
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -37,6 +46,33 @@ interface MorePageProps {
 export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
   const { data, setData } = useAppData();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const categories = data.settings.categories || [
+    'Água', 'Assinaturas', 'Dízimo', 'Energia', 'Internet',
+    'IPTU', 'IPVA', 'Streaming', 'Telefonia', 'Parcela de Carro',
+    'Parcela Terreno', 'Outros'
+  ];
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    const currentCats = [...categories];
+    if (!currentCats.includes(newCategoryName)) {
+      currentCats.push(newCategoryName);
+      setData((prev) => ({
+        ...prev,
+        settings: {
+          ...prev.settings,
+          categories: currentCats
+        }
+      }));
+    }
+    setIsAddingCategory(false);
+    setNewCategoryName('');
+  };
 
   const handleUpdateSettings = (partialSettings: Partial<AppData['settings']>) => {
     setData((prev) => ({
@@ -223,7 +259,10 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
 
       {/* Card 3: Categorias de Gastos */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 space-y-3">
-        <div className="flex items-center justify-between">
+        <div 
+          className="flex items-center justify-between cursor-pointer"
+          onClick={() => setShowCategories(!showCategories)}
+        >
           <div className="flex items-center gap-2">
             <div className="p-2 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl text-indigo-600">
               <Utensils className="w-4 h-4" />
@@ -233,52 +272,57 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
             </h3>
           </div>
           <button
-            onClick={() => alert('Recurso para personalizar categorias disponível em edições avançadas.')}
-            className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-xs"
+            className="p-2 bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 transition-colors shadow-xs"
           >
-            <Plus className="w-4 h-4" />
+            {showCategories ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
 
-        <div className="space-y-2 pt-2">
-          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
-            <Utensils className="w-4 h-4 text-pink-500" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Alimentação
-            </span>
+        {showCategories && (
+          <div className="space-y-2 pt-2">
+            {categories.map((cat, index) => (
+              <div key={index} className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {cat}
+                  </span>
+                </div>
+              </div>
+            ))}
+            
+            {isAddingCategory ? (
+              <div className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Nome da nova categoria"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={handleAddCategory}
+                  className="px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors"
+                >
+                  Salvar
+                </button>
+                <button
+                  onClick={() => setIsAddingCategory(false)}
+                  className="px-3 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAddingCategory(true)}
+                className="w-full mt-2 p-3 border-2 border-dashed border-indigo-200 dark:border-slate-700 rounded-2xl flex items-center justify-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:bg-indigo-50 dark:hover:bg-slate-800/50 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Adicionar Categoria
+              </button>
+            )}
           </div>
-          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
-            <Car className="w-4 h-4 text-orange-500" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Transporte
-            </span>
-          </div>
-          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
-            <Lightbulb className="w-4 h-4 text-indigo-600" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Energia
-            </span>
-          </div>
-          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
-            <GlassWaterIcon className="w-4 h-4 text-indigo-600" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Água
-            </span>
-          </div>
-          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
-            <Network className="w-4 h-4 text-indigo-600" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Internet
-            </span>
-          </div>
-
-          <div className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center gap-3">
-            <Home className="w-4 h-4 text-indigo-600" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Outros
-            </span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Card 4: Sincronização de Dados (Vibrant Banner) */}

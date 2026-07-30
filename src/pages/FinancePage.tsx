@@ -312,10 +312,9 @@ export const FinancePage: React.FC = () => {
                 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-slate-800 px-3 py-1 rounded-full border-none focus:outline-none cursor-pointer"
               >
                 <option value="todas">Ver todas</option>
-                <option value="alimentação">Alimentação</option>
-                <option value="renda">Renda</option>
-                <option value="transporte">Transporte</option>
-                <option value="compras">Compras</option>
+                {(data.settings.categories || []).map(cat => (
+                  <option key={cat} value={cat.toLowerCase()}>{cat}</option>
+                ))}
               </select>
             </div>
 

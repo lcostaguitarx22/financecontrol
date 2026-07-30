@@ -54,8 +54,8 @@ export const Header: React.FC<HeaderProps> = ({ title = 'Finance Control', showB
 
           <div className="flex flex-col justify-center">
             {!showBack && (
-              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">
-                Seja bem vindo Sr. {userName}
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-0.5">
+                Seja bem vindo Sr(a). {userName}, aproveite as Novidades!
               </p>
             )}
             <h1 className="font-extrabold text-indigo-600 dark:text-indigo-400 text-lg tracking-tight flex items-center gap-1.5 leading-none">

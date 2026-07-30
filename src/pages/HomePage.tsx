@@ -138,6 +138,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             </p>
           </div>
           <div>
+            <p className="text-[10px] text-indigo-200 font-medium">Cripto</p>
+            <p className="text-sm font-bold text-white mt-0.5 truncate">
+              {formatCurrency(saldoCripto, data.settings.currency)}
+            </p>
+          </div>
+          <div>
             <p className="text-[10px] text-indigo-200 font-medium">Fatura (Cartão)</p>
             <p className="text-sm font-bold text-pink-200 mt-0.5 truncate">
               {formatCurrency(faturaCartao, data.settings.currency)}
@@ -147,12 +153,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             <p className="text-[10px] text-indigo-200 font-medium">Contas (Boletos)</p>
             <p className="text-sm font-bold text-pink-200 mt-0.5 truncate">
               {formatCurrency(billsTotal - faturaCartao, data.settings.currency)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] text-indigo-200 font-medium">Cripto</p>
-            <p className="text-sm font-bold text-white mt-0.5 truncate">
-              {formatCurrency(saldoCripto, data.settings.currency)}
             </p>
           </div>
         </div>
