@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
-import { formatCurrency, formatBtc } from '../utils/formatters';
+import { formatCurrency, formatBtc, formatDateBr } from '../utils/formatters';
 import { TabType } from '../types';
 
 interface HomePageProps {
@@ -340,7 +340,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-white">{bill.title}</p>
                     <p className="text-[11px] font-semibold text-pink-600 dark:text-pink-400">
-                      {bill.dueDate}
+                      {formatDateBr(bill.dueDate)}
                     </p>
                   </div>
                 </div>

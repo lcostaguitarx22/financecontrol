@@ -22,7 +22,7 @@ import {
   Edit2
 } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatDateBr } from '../utils/formatters';
 import { toggleBillPaid, deleteBill } from '../services/storage';
 import { NewBillModal } from '../components/modals/NewBillModal';
 import { DayDetailsModal, CalendarEvent } from '../components/modals/DayDetailsModal';
@@ -72,7 +72,7 @@ export const BillsPage: React.FC = () => {
     data.fixedBills.forEach(b => {
       const bRecurrence = b.recurrence || 'mensal';
       const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
-      
+
       let shouldShow = true;
       if (bMonthKey) {
         if (bRecurrence === 'unico') {
@@ -222,11 +222,10 @@ export const BillsPage: React.FC = () => {
                 <div
                   key={day}
                   onClick={() => handleDayClick(day)}
-                  className={`py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${
-                    isToday 
-                      ? 'bg-indigo-600 text-white font-bold shadow-md' 
+                  className={`py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${isToday
+                      ? 'bg-indigo-600 text-white font-bold shadow-md'
                       : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}
+                    }`}
                 >
                   <span>{day}</span>
                   <div className="flex items-center gap-0.5 mt-0.5 h-1">
@@ -368,7 +367,7 @@ export const BillsPage: React.FC = () => {
                     <div className="flex items-center gap-2 mt-0.5">
                       {getStatusBadge(bill.status, bill.dueDate)}
                       <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {bill.dueDate}
+                        {formatDateBr(bill.dueDate)}
                       </span>
                     </div>
                   </div>
@@ -406,7 +405,7 @@ export const BillsPage: React.FC = () => {
             [...pendingBills].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 4).map(b => (
               <div key={b.id} className="relative">
                 <span className="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-slate-900 dark:bg-white rounded-full" />
-                <p className="text-xs font-bold text-slate-900 dark:text-white">{b.dueDate}</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">{formatDateBr(b.dueDate)}</p>
                 <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
                   {b.title} ({formatCurrency(b.amount, data.settings.currency)})
                 </p>
@@ -417,11 +416,11 @@ export const BillsPage: React.FC = () => {
       </div>
 
       {selectedDay && (
-        <DayDetailsModal 
-          date={selectedDay.date} 
-          events={selectedDay.events} 
-          currency={data.settings.currency} 
-          onClose={() => setSelectedDay(null)} 
+        <DayDetailsModal
+          date={selectedDay.date}
+          events={selectedDay.events}
+          currency={data.settings.currency}
+          onClose={() => setSelectedDay(null)}
         />
       )}
       {showNewBillModal && <NewBillModal onClose={() => setShowNewBillModal(false)} />}

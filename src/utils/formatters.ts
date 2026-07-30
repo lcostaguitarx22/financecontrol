@@ -34,14 +34,18 @@ export function formatDateBr(dateString: string): string {
     return dateString;
   }
   try {
-    const [year, month, day] = dateString.split('-');
+    let year, month, day;
+    if (dateString.includes('-')) {
+      [year, month, day] = dateString.split('-');
+    } else if (dateString.includes('/')) {
+      [day, month, year] = dateString.split('/');
+    }
+
     if (year && month && day) {
-      const months = [
-        'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-        'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
-      ];
-      const monthIdx = parseInt(month, 10) - 1;
-      return `${parseInt(day, 10)} ${months[monthIdx] || ''} ${year}`;
+      const shortYear = year.length === 4 ? year.slice(-2) : year;
+      const padDay = day.padStart(2, '0');
+      const padMonth = month.padStart(2, '0');
+      return `${padDay}/${padMonth}/${shortYear}`;
     }
   } catch (e) {
     // Return original
