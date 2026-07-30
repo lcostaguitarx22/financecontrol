@@ -203,7 +203,7 @@ export const FinanceBudget: React.FC = () => {
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl"></div>
 
         <div className="relative z-10 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider">
               Salário Previsto
             </p>
@@ -289,18 +289,18 @@ export const FinanceBudget: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-white/20 relative z-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/20 relative z-10">
           <div>
             <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">RECEITAS TOTAIS</p>
-            <p className="text-sm font-bold">{formatCurrency(totalReceitasAtuais, data.settings.currency)}</p>
+            <p className="text-sm font-bold truncate">{formatCurrency(totalReceitasAtuais, data.settings.currency)}</p>
           </div>
           <div>
             <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">TOTAL CONTAS FIXAS</p>
-            <p className="text-sm font-bold">{formatCurrency(totalFixedBills, data.settings.currency)}</p>
+            <p className="text-sm font-bold truncate">{formatCurrency(totalFixedBills, data.settings.currency)}</p>
           </div>
-          <div className="text-right">
+          <div className="col-span-2 sm:col-span-1 sm:text-right">
             <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">SALDO NO MÊS</p>
-            <p className="text-sm font-bold">{formatCurrency(saldoPrevisto, data.settings.currency)}</p>
+            <p className="text-sm font-bold truncate">{formatCurrency(saldoPrevisto, data.settings.currency)}</p>
           </div>
         </div>
       </div>

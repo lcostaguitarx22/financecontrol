@@ -258,7 +258,7 @@ export const CryptoPage: React.FC = () => {
                         </p>
                       </div>
                       
-                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
                             // @ts-ignore
@@ -339,7 +339,7 @@ export const CryptoPage: React.FC = () => {
                       </p>
                     </div>
                     
-                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => {
                           // @ts-ignore

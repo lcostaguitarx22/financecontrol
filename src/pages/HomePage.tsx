@@ -130,7 +130,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
           {formatCurrency(saldoGeral, data.settings.currency)}
         </div>
 
-        <div className="pt-3 border-t border-indigo-500/40 grid grid-cols-4 gap-2">
+        <div className="pt-3 border-t border-indigo-500/40 grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
             <p className="text-[10px] text-indigo-200 font-medium">Conta Corrente</p>
             <p className="text-sm font-bold text-white mt-0.5 truncate">
