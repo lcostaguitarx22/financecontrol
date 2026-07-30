@@ -69,6 +69,7 @@ export interface FixedBill {
   category: string;
   dueDate?: string; // e.g. "2026-08-05" from input date
   paymentSource?: string; // ID da carteira ou nome da conta
+  recurrence?: 'mensal' | 'unico';
 }
 
 export interface RendimentoEntry {

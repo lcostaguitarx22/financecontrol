@@ -78,7 +78,16 @@ export const FinancePage: React.FC = () => {
   const nextMonthExtra = data.monthlyExtras?.[nextMonthKey] ?? 0;
 
   const previsaoReceitas = nextMonthSalary + nextMonthExtra;
-  const previsaoDespesas = (data.fixedBills || []).reduce((acc, b) => acc + b.amount, 0);
+  const previsaoDespesas = (data.fixedBills || []).reduce((acc, b) => {
+    const bRecurrence = b.recurrence || 'mensal';
+    const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+    if (!bMonthKey) return acc + b.amount;
+    
+    if (bRecurrence === 'unico') {
+      return bMonthKey === nextMonthKey ? acc + b.amount : acc;
+    }
+    return bMonthKey <= nextMonthKey ? acc + b.amount : acc;
+  }, 0);
 
   const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const nextMonthName = monthsNames[nextMonthD.getMonth()];

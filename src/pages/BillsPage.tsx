@@ -70,7 +70,19 @@ export const BillsPage: React.FC = () => {
 
     // Contas fixas (dueDate pode ser YYYY-MM-DD)
     data.fixedBills.forEach(b => {
-      if (b.dueDate && b.dueDate.split('-')[2] === dayStr) {
+      const bRecurrence = b.recurrence || 'mensal';
+      const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+      
+      let shouldShow = true;
+      if (bMonthKey) {
+        if (bRecurrence === 'unico') {
+          shouldShow = bMonthKey === currentYyyyMm;
+        } else {
+          shouldShow = bMonthKey <= currentYyyyMm;
+        }
+      }
+
+      if (shouldShow && b.dueDate && b.dueDate.split('-')[2] === dayStr) {
         events.push({ id: b.id, title: b.title, amount: b.amount, type: 'debito', source: 'conta_fixa' });
       }
     });

@@ -30,7 +30,8 @@ export const FinanceBudget: React.FC = () => {
     amount: 0,
     category: 'Moradia',
     dueDate: '',
-    paymentSource: ''
+    paymentSource: '',
+    recurrence: 'mensal'
   });
 
   // Atualizar tempSalary quando mudar de mês
@@ -79,8 +80,9 @@ export const FinanceBudget: React.FC = () => {
       name: bill.name,
       amount: bill.amount,
       category: bill.category,
-      dueDate: bill.dueDate || 1,
-      paymentSource: bill.paymentSource || ''
+      dueDate: bill.dueDate || '',
+      paymentSource: bill.paymentSource || '',
+      recurrence: bill.recurrence || 'mensal'
     });
     setShowNewBillForm(true);
     window.scrollTo({ top: document.getElementById('fixed-bills-section')?.offsetTop, behavior: 'smooth' });
@@ -94,7 +96,8 @@ export const FinanceBudget: React.FC = () => {
         amount: Number(newBill.amount),
         category: newBill.category || 'Outros',
         dueDate: newBill.dueDate || '',
-        paymentSource: newBill.paymentSource
+        paymentSource: newBill.paymentSource,
+        recurrence: newBill.recurrence || 'mensal'
       };
       
       setData((prev) => {
@@ -106,7 +109,7 @@ export const FinanceBudget: React.FC = () => {
         }
       });
       
-      setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: '', paymentSource: '' });
+      setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: '', paymentSource: '', recurrence: 'mensal' });
       setShowNewBillForm(false);
       setEditingBillId(null);
     }
@@ -122,7 +125,7 @@ export const FinanceBudget: React.FC = () => {
   const handleCancelForm = () => {
     setShowNewBillForm(false);
     setEditingBillId(null);
-    setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: '', paymentSource: '' });
+    setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: '', paymentSource: '', recurrence: 'mensal' });
   };
 
   // Calcula projeção para os próximos 6 meses
@@ -136,7 +139,8 @@ export const FinanceBudget: React.FC = () => {
       .map(e => e[1]);
     const lastKnownSalary = knownSalaries.length > 0 ? knownSalaries[knownSalaries.length - 1] : (data.salary || 0);
 
-    const totalBills = (data.fixedBills || []).reduce((acc, bill) => acc + bill.amount, 0);
+    // We need to filter fixed bills for each target month in projection
+    const allFixedBills = data.fixedBills || [];
 
     const projection = [];
     for (let i = 0; i < 6; i++) {
@@ -147,13 +151,27 @@ export const FinanceBudget: React.FC = () => {
       const monthSalary = data.monthlySalaries?.[targetYyyyMm] ?? lastKnownSalary;
       const monthExtra = data.monthlyExtras?.[targetYyyyMm] ?? 0;
       
+      // Calculate total bills for this specific month
+      const monthTotalBills = allFixedBills.reduce((acc, bill) => {
+        const bRecurrence = bill.recurrence || 'mensal';
+        const bMonthKey = bill.dueDate ? bill.dueDate.substring(0, 7) : '';
+        if (!bMonthKey) return acc + bill.amount; // fallback if no date
+
+        if (bRecurrence === 'unico') {
+          return bMonthKey === targetYyyyMm ? acc + bill.amount : acc;
+        } else {
+          // mensal: só projeta se o mês de criação for <= mês alvo
+          return bMonthKey <= targetYyyyMm ? acc + bill.amount : acc;
+        }
+      }, 0);
+
       const totalReceitas = monthSalary + monthExtra;
-      const monthlyBalance = totalReceitas - totalBills;
+      const monthlyBalance = totalReceitas - monthTotalBills;
 
       projection.push({
         name: monthsNames[targetDate.getMonth()],
         Receitas: totalReceitas,
-        Despesas: totalBills,
+        Despesas: monthTotalBills,
         Saldo: monthlyBalance
       });
     }
@@ -161,7 +179,19 @@ export const FinanceBudget: React.FC = () => {
   };
 
   const projectionData = useMemo(() => generateProjection(), [data.monthlySalaries, data.monthlyExtras, data.fixedBills, data.salary]);
-  const totalFixedBills = (data.fixedBills || []).reduce((acc, bill) => acc + bill.amount, 0);
+  const filteredFixedBills = useMemo(() => {
+    return (data.fixedBills || []).filter(bill => {
+      const bRecurrence = bill.recurrence || 'mensal';
+      const bMonthKey = bill.dueDate ? bill.dueDate.substring(0, 7) : '';
+      if (!bMonthKey) return true;
+      if (bRecurrence === 'unico') {
+        return bMonthKey === selectedMonth;
+      }
+      return bMonthKey <= selectedMonth;
+    });
+  }, [data.fixedBills, selectedMonth]);
+
+  const totalFixedBills = filteredFixedBills.reduce((acc, bill) => acc + bill.amount, 0);
   const totalReceitasAtuais = currentSalary + currentExtra;
   const saldoPrevisto = totalReceitasAtuais - totalFixedBills;
 
@@ -393,6 +423,23 @@ export const FinanceBudget: React.FC = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Recorrência</label>
+                <select
+                  value={newBill.recurrence || 'mensal'}
+                  onChange={(e) => setNewBill({ ...newBill, recurrence: e.target.value as 'mensal' | 'unico' })}
+                  className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                >
+                  <option value="mensal">Fixo (Todos os meses)</option>
+                  <option value="unico">Único (Apenas neste mês)</option>
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1 ml-1">
+                  Se "Único", a conta só aparecerá no mês da data de vencimento. Se "Fixo", aparecerá do mês de vencimento em diante.
+                </p>
+              </div>
+            </div>
+
             <div className="flex gap-2 pt-2">
               <button
                 onClick={handleCancelForm}
@@ -411,12 +458,12 @@ export const FinanceBudget: React.FC = () => {
         )}
 
         <div className="space-y-3">
-          {(!data.fixedBills || data.fixedBills.length === 0) ? (
+          {filteredFixedBills.length === 0 ? (
             <p className="text-center text-xs text-slate-400 py-4 font-medium">
-              Nenhuma conta fixa cadastrada.
+              Nenhuma conta fixa cadastrada para este mês.
             </p>
           ) : (
-            data.fixedBills.map((bill) => {
+            filteredFixedBills.map((bill) => {
               // Extrair o dia e mês se dueDate estiver preenchido (ex: "2026-08-05" -> "05/08")
               let formattedDate = bill.dueDate ? bill.dueDate : '';
               if (bill.dueDate && bill.dueDate.includes('-')) {
