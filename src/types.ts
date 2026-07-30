@@ -97,6 +97,7 @@ export interface AppData {
   budgets: CategoryBudget[];
   fixedBills: FixedBill[];
   monthlySalaries?: Record<string, number>; // ex: { "2026-08": 5000, "2026-09": 5200 }
+  monthlyExtras?: Record<string, number>;
   salary?: number; // Deprecated, keep for backward compatibility temporarily
   rendimentos: RendimentoEntry[];
   totalAccumulatedYield: number;

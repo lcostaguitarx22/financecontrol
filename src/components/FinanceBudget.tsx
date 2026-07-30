@@ -18,6 +18,10 @@ export const FinanceBudget: React.FC = () => {
   const [isEditingSalary, setIsEditingSalary] = useState(false);
   const [tempSalary, setTempSalary] = useState(currentSalary.toString());
 
+  const currentExtra = data.monthlyExtras?.[selectedMonth] ?? 0;
+  const [isEditingExtra, setIsEditingExtra] = useState(false);
+  const [tempExtra, setTempExtra] = useState(currentExtra.toString());
+
   const [showNewBillForm, setShowNewBillForm] = useState(false);
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
   
@@ -34,8 +38,11 @@ export const FinanceBudget: React.FC = () => {
     const val = e.target.value; // YYYY-MM
     setSelectedMonth(val);
     const sal = data.monthlySalaries?.[val] ?? (data.salary || 0);
+    const extr = data.monthlyExtras?.[val] ?? 0;
     setTempSalary(sal.toString());
+    setTempExtra(extr.toString());
     setIsEditingSalary(false);
+    setIsEditingExtra(false);
   };
 
   const handleSaveSalary = () => {
@@ -50,6 +57,20 @@ export const FinanceBudget: React.FC = () => {
       }));
     }
     setIsEditingSalary(false);
+  };
+
+  const handleSaveExtra = () => {
+    const val = parseFloat(tempExtra);
+    if (!isNaN(val)) {
+      setData((prev) => ({
+        ...prev,
+        monthlyExtras: {
+          ...(prev.monthlyExtras || {}),
+          [selectedMonth]: val
+        }
+      }));
+    }
+    setIsEditingExtra(false);
   };
 
   const handleEditBill = (bill: FixedBill) => {
@@ -124,11 +145,14 @@ export const FinanceBudget: React.FC = () => {
       
       // Salário do mês alvo, se não existir pega o último conhecido
       const monthSalary = data.monthlySalaries?.[targetYyyyMm] ?? lastKnownSalary;
-      const monthlyBalance = monthSalary - totalBills;
+      const monthExtra = data.monthlyExtras?.[targetYyyyMm] ?? 0;
+      
+      const totalReceitas = monthSalary + monthExtra;
+      const monthlyBalance = totalReceitas - totalBills;
 
       projection.push({
         name: monthsNames[targetDate.getMonth()],
-        Receitas: monthSalary,
+        Receitas: totalReceitas,
         Despesas: totalBills,
         Saldo: monthlyBalance
       });
@@ -136,9 +160,10 @@ export const FinanceBudget: React.FC = () => {
     return projection;
   };
 
-  const projectionData = useMemo(() => generateProjection(), [data.monthlySalaries, data.fixedBills, data.salary]);
+  const projectionData = useMemo(() => generateProjection(), [data.monthlySalaries, data.monthlyExtras, data.fixedBills, data.salary]);
   const totalFixedBills = (data.fixedBills || []).reduce((acc, bill) => acc + bill.amount, 0);
-  const saldoPrevisto = currentSalary - totalFixedBills;
+  const totalReceitasAtuais = currentSalary + currentExtra;
+  const saldoPrevisto = totalReceitasAtuais - totalFixedBills;
 
   return (
     <div className="space-y-6 pb-24 animate-in fade-in duration-300">
@@ -166,7 +191,7 @@ export const FinanceBudget: React.FC = () => {
                 type="number"
                 value={tempSalary}
                 onChange={(e) => setTempSalary(e.target.value)}
-                className="bg-white/20 border border-white/30 rounded-xl px-3 py-1.5 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 w-32 font-bold"
+                className="bg-white/20 border border-white/30 rounded-xl px-3 py-1.5 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 w-28 font-bold"
                 placeholder="Valor"
                 autoFocus
               />
@@ -179,7 +204,7 @@ export const FinanceBudget: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <p className="text-3xl font-extrabold tracking-tight">
+              <p className="text-xl sm:text-2xl font-extrabold tracking-tight">
                 {formatCurrency(currentSalary, data.settings.currency)}
               </p>
               <button
@@ -189,13 +214,56 @@ export const FinanceBudget: React.FC = () => {
                 }}
                 className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
               >
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
+
+          <div className="mt-2">
+            <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-wider mb-1">
+              Serviços Extras (Mês)
+            </p>
+            {isEditingExtra ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={tempExtra}
+                  onChange={(e) => setTempExtra(e.target.value)}
+                  className="bg-white/20 border border-white/30 rounded-xl px-3 py-1.5 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 w-28 font-bold"
+                  placeholder="Valor Extra"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveExtra}
+                  className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <p className="text-lg font-bold">
+                  {formatCurrency(currentExtra, data.settings.currency)}
+                </p>
+                <button
+                  onClick={() => {
+                    setTempExtra(currentExtra.toString());
+                    setIsEditingExtra(true);
+                  }}
+                  className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-white/20 relative z-10">
+          <div>
+            <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">RECEITAS TOTAIS</p>
+            <p className="text-sm font-bold">{formatCurrency(totalReceitasAtuais, data.settings.currency)}</p>
+          </div>
           <div>
             <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">TOTAL CONTAS FIXAS</p>
             <p className="text-sm font-bold">{formatCurrency(totalFixedBills, data.settings.currency)}</p>

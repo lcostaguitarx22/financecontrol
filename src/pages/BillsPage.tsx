@@ -258,7 +258,7 @@ export const BillsPage: React.FC = () => {
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       {bill.title}
-                      <span className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                      <span className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center gap-1 transition-opacity">
                         <button 
                           onClick={() => {
                             (window as any).currentEditBill = bill;

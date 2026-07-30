@@ -44,6 +44,22 @@ export const FinancePage: React.FC = () => {
 
   const saldoMes = totalReceitas - totalDespesas;
 
+  // Cálculo de Previsão Próximo Mês
+  const nextMonthD = new Date();
+  nextMonthD.setMonth(nextMonthD.getMonth() + 1);
+  const nextMonthKey = `${nextMonthD.getFullYear()}-${String(nextMonthD.getMonth() + 1).padStart(2, '0')}`;
+  
+  const knownSalaries = Object.entries(data.monthlySalaries || {})
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(e => e[1]);
+  const lastKnownSalary = knownSalaries.length > 0 ? knownSalaries[knownSalaries.length - 1] : (data.salary || 0);
+  
+  const nextMonthSalary = data.monthlySalaries?.[nextMonthKey] ?? lastKnownSalary;
+  const nextMonthExtra = data.monthlyExtras?.[nextMonthKey] ?? 0;
+  
+  const previsaoReceitas = nextMonthSalary + nextMonthExtra;
+  const previsaoDespesas = (data.fixedBills || []).reduce((acc, b) => acc + b.amount, 0);
+
   // Filtrar transações
   const filteredTransactions = data.transactions.filter((t) => {
     if (filterCategory === 'todas') return true;
@@ -221,6 +237,27 @@ export const FinancePage: React.FC = () => {
           </div>
           <div className="p-3 bg-indigo-600/40 rounded-2xl text-indigo-200 border border-indigo-400/30">
             <Wallet className="w-5 h-5" />
+          </div>
+        </div>
+        
+        {/* Previsão Próximo Mês */}
+        <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-3">
+            Orçamento Previsto (Próximo Mês)
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] text-slate-400 font-semibold mb-1">RECEITAS</p>
+              <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                {formatCurrency(previsaoReceitas, data.settings.currency)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 font-semibold mb-1">DESPESAS FIXAS</p>
+              <p className="text-sm font-extrabold text-pink-600 dark:text-pink-400">
+                {formatCurrency(previsaoDespesas, data.settings.currency)}
+              </p>
+            </div>
           </div>
         </div>
       </div>
