@@ -125,17 +125,16 @@ export const BillsPage: React.FC = () => {
             {Array.from({ length: 30 }).map((_, i) => {
               const day = i + 1;
               const hasBill = data.bills.some(b => {
-                 const bDay = parseInt(b.dueDate.split('-')[2]); // assumindo YYYY-MM-DD
-                 return bDay === day;
+                const bDay = parseInt(b.dueDate.split('-')[2]); // assumindo YYYY-MM-DD
+                return bDay === day;
               });
               return (
                 <div
                   key={day}
-                  className={`py-1.5 rounded-lg text-xs ${
-                    hasBill
-                      ? 'bg-rose-500 text-white font-bold ring-2 ring-rose-200'
-                      : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}
+                  className={`py-1.5 rounded-lg text-xs ${hasBill
+                    ? 'bg-rose-500 text-white font-bold ring-2 ring-rose-200'
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
                 >
                   {day}
                 </div>
@@ -217,21 +216,19 @@ export const BillsPage: React.FC = () => {
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
             <button
               onClick={() => setFilter('Todas')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                filter === 'Todas'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500'
-              }`}
+              className={`px-3 py-1 rounded-lg transition-all ${filter === 'Todas'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500'
+                }`}
             >
               Todas
             </button>
             <button
               onClick={() => setFilter('Pendentes')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                filter === 'Pendentes'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500'
-              }`}
+              className={`px-3 py-1 rounded-lg transition-all ${filter === 'Pendentes'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500'
+                }`}
             >
               Pendentes
             </button>
@@ -240,30 +237,29 @@ export const BillsPage: React.FC = () => {
 
         <div className="space-y-3">
           {filteredBills.length === 0 ? (
-             <p className="text-center text-xs text-slate-400 py-4">Nenhuma conta cadastrada.</p>
+            <p className="text-center text-xs text-slate-400 py-4">Nenhuma conta cadastrada.</p>
           ) : (
             filteredBills.map((bill) => (
               <div
                 key={bill.id}
-                className={`flex items-center justify-between p-3 rounded-xl border transition-all group ${
-                  bill.status === 'pago'
-                    ? 'bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30'
-                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-100 dark:border-slate-800'
-                }`}
+                className={`flex items-center justify-between p-3 rounded-xl border transition-all group ${bill.status === 'pago'
+                  ? 'bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30'
+                  : 'bg-slate-50 dark:bg-slate-800/60 border-slate-100 dark:border-slate-800'
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800">
                     {getBillIcon(bill.iconName)}
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-3">
                       {bill.title}
-                      <span className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center gap-1 transition-opacity">
-                        <button 
+                      <span className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center gap-2 transition-opacity">
+                        <button
                           onClick={() => {
                             (window as any).currentEditBill = bill;
                             setShowNewBillModal(true);
-                          }} 
+                          }}
                           className="text-slate-400 hover:text-indigo-600"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -288,11 +284,10 @@ export const BillsPage: React.FC = () => {
                   </span>
                   <button
                     onClick={() => toggleBillPaid(bill.id)}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                      bill.status === 'pago'
-                        ? 'bg-emerald-600 text-white'
-                        : 'border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500'
-                    }`}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${bill.status === 'pago'
+                      ? 'bg-emerald-600 text-white'
+                      : 'border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500'
+                      }`}
                   >
                     {bill.status === 'pago' && <Check className="w-4 h-4 stroke-[3px]" />}
                   </button>
@@ -309,10 +304,10 @@ export const BillsPage: React.FC = () => {
         </h3>
 
         <div className="space-y-4 relative pl-4 border-l-2 border-slate-100 dark:border-slate-800">
-           {pendingBills.length === 0 ? (
-             <p className="text-xs text-slate-400 italic">Nenhum vencimento próximo.</p>
-           ) : (
-             [...pendingBills].sort((a,b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 4).map(b => (
+          {pendingBills.length === 0 ? (
+            <p className="text-xs text-slate-400 italic">Nenhum vencimento próximo.</p>
+          ) : (
+            [...pendingBills].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 4).map(b => (
               <div key={b.id} className="relative">
                 <span className="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-slate-900 dark:bg-white rounded-full" />
                 <p className="text-xs font-bold text-slate-900 dark:text-white">{b.dueDate}</p>
@@ -320,8 +315,8 @@ export const BillsPage: React.FC = () => {
                   {b.title} ({formatCurrency(b.amount, data.settings.currency)})
                 </p>
               </div>
-             ))
-           )}
+            ))
+          )}
         </div>
       </div>
 
