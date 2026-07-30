@@ -89,7 +89,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50/80 via-slate-50 to-pink-50/60 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/40 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-600 selection:text-white">
       {/* Container responsivo mobile-first */}
-      <div className="max-w-lg mx-auto min-h-screen flex flex-col relative bg-white/70 dark:bg-slate-950/90 backdrop-blur-3xl shadow-2xl shadow-indigo-200/50 dark:shadow-none sm:border-x sm:border-indigo-100/60 dark:sm:border-slate-800/60">
+      <div className="max-w-7xl mx-auto min-h-screen flex flex-col relative bg-white/70 dark:bg-slate-950/90 backdrop-blur-3xl shadow-2xl shadow-indigo-200/50 dark:shadow-none sm:border-x sm:border-indigo-100/60 dark:sm:border-slate-800/60">
         {/* Cabeçalho */}
         <Header
           title={showRendimentoPage ? 'Resumo de Rendimentos' : 'Finance Control'}

@@ -76,9 +76,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete }) 
           {steps.map((_, index) => (
             <div
               key={index}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                index === step ? 'w-8 bg-indigo-600' : 'w-2 bg-slate-200 dark:bg-slate-700'
-              }`}
+              className={`h-2 rounded-full transition-all duration-300 ${index === step ? 'w-8 bg-indigo-600' : 'w-2 bg-slate-200 dark:bg-slate-700'
+                }`}
             />
           ))}
         </div>
