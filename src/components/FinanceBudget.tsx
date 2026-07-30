@@ -25,7 +25,7 @@ export const FinanceBudget: React.FC = () => {
     name: '',
     amount: 0,
     category: 'Moradia',
-    dueDate: 5,
+    dueDate: '',
     paymentSource: ''
   });
 
@@ -72,7 +72,7 @@ export const FinanceBudget: React.FC = () => {
         name: newBill.name,
         amount: Number(newBill.amount),
         category: newBill.category || 'Outros',
-        dueDate: Number(newBill.dueDate),
+        dueDate: newBill.dueDate || '',
         paymentSource: newBill.paymentSource
       };
       
@@ -85,7 +85,7 @@ export const FinanceBudget: React.FC = () => {
         }
       });
       
-      setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: 5, paymentSource: '' });
+      setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: '', paymentSource: '' });
       setShowNewBillForm(false);
       setEditingBillId(null);
     }
@@ -101,7 +101,7 @@ export const FinanceBudget: React.FC = () => {
   const handleCancelForm = () => {
     setShowNewBillForm(false);
     setEditingBillId(null);
-    setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: 5, paymentSource: '' });
+    setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: '', paymentSource: '' });
   };
 
   // Calcula projeção para os próximos 6 meses
@@ -303,12 +303,9 @@ export const FinanceBudget: React.FC = () => {
               <div>
                 <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Dia do Vencimento</label>
                 <input
-                  type="number"
-                  min="1"
-                  max="31"
-                  placeholder="Ex: 5"
+                  type="date"
                   value={newBill.dueDate || ''}
-                  onChange={(e) => setNewBill({ ...newBill, dueDate: Number(e.target.value) })}
+                  onChange={(e) => setNewBill({ ...newBill, dueDate: e.target.value })}
                   className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
@@ -321,9 +318,9 @@ export const FinanceBudget: React.FC = () => {
                   className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 >
                   <option value="">Não especificado</option>
-                  {data.wallets.map(w => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
+                  <option value="Saldo em conta">Saldo em conta</option>
+                  <option value="Pix">Pix</option>
+                  <option value="Cartão de Crédito">Cartão de Crédito</option>
                 </select>
               </div>
             </div>
@@ -352,7 +349,14 @@ export const FinanceBudget: React.FC = () => {
             </p>
           ) : (
             data.fixedBills.map((bill) => {
-              const walletName = data.wallets.find(w => w.id === bill.paymentSource)?.name;
+              // Extrair o dia e mês se dueDate estiver preenchido (ex: "2026-08-05" -> "05/08")
+              let formattedDate = bill.dueDate ? bill.dueDate : '';
+              if (bill.dueDate && bill.dueDate.includes('-')) {
+                const parts = bill.dueDate.split('-');
+                if (parts.length === 3) {
+                  formattedDate = `${parts[2]}/${parts[1]}`;
+                }
+              }
 
               return (
                 <div
@@ -371,14 +375,14 @@ export const FinanceBudget: React.FC = () => {
                   
                   <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-2 mt-1">
                     <div className="flex items-center gap-3">
-                      {bill.dueDate && (
+                      {formattedDate && (
                         <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold">
-                          <Calendar className="w-3 h-3" /> Dia {bill.dueDate}
+                          <Calendar className="w-3 h-3" /> {formattedDate}
                         </div>
                       )}
-                      {walletName && (
+                      {bill.paymentSource && (
                         <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold">
-                          <Wallet className="w-3 h-3" /> {walletName}
+                          <Wallet className="w-3 h-3" /> {bill.paymentSource}
                         </div>
                       )}
                     </div>

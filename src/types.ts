@@ -67,7 +67,7 @@ export interface FixedBill {
   name: string;
   amount: number;
   category: string;
-  dueDate?: number; // 1 to 31
+  dueDate?: string; // e.g. "2026-08-05" from input date
   paymentSource?: string; // ID da carteira ou nome da conta
 }
 
