@@ -34,9 +34,29 @@ export const FinancePage: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>('todas');
 
   // Calcular totais
-  const totalReceitas = data.transactions
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const [currYear, currMonth] = currentMonthKey.split('-').map(Number);
+
+  let totalReceitas = data.transactions
     .filter((t) => t.type === 'receita')
     .reduce((acc, t) => acc + t.amount, 0);
+
+  // Adiciona automaticamente o salário fixo se a data for >= final do mês (dia de pagamento) ou mês passado
+  Object.entries(data.monthlySalaries || {}).forEach(([monthKey, salary]) => {
+    const [y, m] = monthKey.split('-').map(Number);
+    const lastDayOfMonth = new Date(currYear, currMonth, 0).getDate();
+    // Consideramos pago se:
+    // 1. O mês for no passado
+    // 2. Ou se for o mês atual e hoje for dia >= (último dia do mês ou dia 30, o que for menor)
+    const paymentDay = Math.min(30, lastDayOfMonth);
+    if (y < currYear || (y === currYear && m < currMonth)) {
+       totalReceitas += salary;
+    } else if (y === currYear && m === currMonth && currentDay >= paymentDay) {
+       totalReceitas += salary;
+    }
+  });
 
   const totalDespesas = data.transactions
     .filter((t) => t.type === 'despesa')
@@ -248,7 +268,7 @@ export const FinancePage: React.FC = () => {
                   <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
                     {formatCurrency(previsaoReceitas, data.settings.currency)}
                   </p>
-                  
+
                   <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUMULADO</p>
                   <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
                     {formatCurrency(saldoMes + previsaoReceitas, data.settings.currency)}
@@ -258,6 +278,10 @@ export const FinancePage: React.FC = () => {
                   <p className="text-[10px] text-slate-400 font-semibold mb-1">DESPESAS FIXAS</p>
                   <p className="text-sm font-extrabold text-pink-600 dark:text-pink-400">
                     {formatCurrency(previsaoDespesas, data.settings.currency)}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ATUAL COM DESCONTO</p>
+                  <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                    {formatCurrency(saldoMes - previsaoDespesas, data.settings.currency)}
                   </p>
                 </div>
               </div>
