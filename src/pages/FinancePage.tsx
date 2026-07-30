@@ -52,9 +52,9 @@ export const FinancePage: React.FC = () => {
     // 2. Ou se for o mês atual e hoje for dia >= (último dia do mês ou dia 30, o que for menor)
     const paymentDay = Math.min(30, lastDayOfMonth);
     if (y < currYear || (y === currYear && m < currMonth)) {
-       totalReceitas += salary;
+      totalReceitas += salary;
     } else if (y === currYear && m === currMonth && currentDay >= paymentDay) {
-       totalReceitas += salary;
+      totalReceitas += salary;
     }
   });
 
@@ -79,6 +79,9 @@ export const FinancePage: React.FC = () => {
 
   const previsaoReceitas = nextMonthSalary + nextMonthExtra;
   const previsaoDespesas = (data.fixedBills || []).reduce((acc, b) => acc + b.amount, 0);
+
+  const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const nextMonthName = monthsNames[nextMonthD.getMonth()];
 
   // Filtrar transações
   const filteredTransactions = data.transactions.filter((t) => {
@@ -260,7 +263,7 @@ export const FinancePage: React.FC = () => {
             {/* Previsão Próximo Mês */}
             <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
               <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-3">
-                Orçamento Previsto (Próximo Mês)
+                Orçamento Previsto (Próximo Mês) - {nextMonthName}
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
