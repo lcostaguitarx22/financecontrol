@@ -67,6 +67,8 @@ export interface FixedBill {
   name: string;
   amount: number;
   category: string;
+  dueDate?: number; // 1 to 31
+  paymentSource?: string; // ID da carteira ou nome da conta
 }
 
 export interface RendimentoEntry {
@@ -94,7 +96,8 @@ export interface AppData {
   bills: Bill[];
   budgets: CategoryBudget[];
   fixedBills: FixedBill[];
-  salary: number;
+  monthlySalaries?: Record<string, number>; // ex: { "2026-08": 5000, "2026-09": 5200 }
+  salary?: number; // Deprecated, keep for backward compatibility temporarily
   rendimentos: RendimentoEntry[];
   totalAccumulatedYield: number;
 }

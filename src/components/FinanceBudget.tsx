@@ -1,44 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency } from '../utils/formatters';
-import { Plus, Trash2, Edit3, TrendingUp, Save } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { Plus, Trash2, Edit3, TrendingUp, Save, Calendar, Wallet } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { FixedBill } from '../types';
 
 export const FinanceBudget: React.FC = () => {
   const { data, setData } = useAppData();
+  
+  // Salário do mês atual
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  
+  const currentSalary = data.monthlySalaries?.[selectedMonth] ?? (data.salary || 0);
   const [isEditingSalary, setIsEditingSalary] = useState(false);
-  const [tempSalary, setTempSalary] = useState(data.salary?.toString() || '0');
+  const [tempSalary, setTempSalary] = useState(currentSalary.toString());
 
   const [showNewBillForm, setShowNewBillForm] = useState(false);
+  const [editingBillId, setEditingBillId] = useState<string | null>(null);
+  
   const [newBill, setNewBill] = useState<Partial<FixedBill>>({
     name: '',
     amount: 0,
-    category: 'Moradia'
+    category: 'Moradia',
+    dueDate: 5,
+    paymentSource: ''
   });
+
+  // Atualizar tempSalary quando mudar de mês
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value; // YYYY-MM
+    setSelectedMonth(val);
+    const sal = data.monthlySalaries?.[val] ?? (data.salary || 0);
+    setTempSalary(sal.toString());
+    setIsEditingSalary(false);
+  };
 
   const handleSaveSalary = () => {
     const val = parseFloat(tempSalary);
     if (!isNaN(val)) {
-      setData((prev) => ({ ...prev, salary: val }));
+      setData((prev) => ({
+        ...prev,
+        monthlySalaries: {
+          ...(prev.monthlySalaries || {}),
+          [selectedMonth]: val
+        }
+      }));
     }
     setIsEditingSalary(false);
   };
 
-  const handleAddBill = () => {
+  const handleEditBill = (bill: FixedBill) => {
+    setEditingBillId(bill.id);
+    setNewBill({
+      name: bill.name,
+      amount: bill.amount,
+      category: bill.category,
+      dueDate: bill.dueDate || 1,
+      paymentSource: bill.paymentSource || ''
+    });
+    setShowNewBillForm(true);
+    window.scrollTo({ top: document.getElementById('fixed-bills-section')?.offsetTop, behavior: 'smooth' });
+  };
+
+  const handleSaveBill = () => {
     if (newBill.name && newBill.amount && newBill.amount > 0) {
       const bill: FixedBill = {
-        id: `fb-${Date.now()}`,
+        id: editingBillId || `fb-${Date.now()}`,
         name: newBill.name,
         amount: Number(newBill.amount),
-        category: newBill.category || 'Outros'
+        category: newBill.category || 'Outros',
+        dueDate: Number(newBill.dueDate),
+        paymentSource: newBill.paymentSource
       };
-      setData((prev) => ({
-        ...prev,
-        fixedBills: [...(prev.fixedBills || []), bill]
-      }));
-      setNewBill({ name: '', amount: 0, category: 'Moradia' });
+      
+      setData((prev) => {
+        const bills = prev.fixedBills || [];
+        if (editingBillId) {
+          return { ...prev, fixedBills: bills.map(b => b.id === editingBillId ? bill : b) };
+        } else {
+          return { ...prev, fixedBills: [...bills, bill] };
+        }
+      });
+      
+      setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: 5, paymentSource: '' });
       setShowNewBillForm(false);
+      setEditingBillId(null);
     }
   };
 
@@ -49,48 +98,77 @@ export const FinanceBudget: React.FC = () => {
     }));
   };
 
+  const handleCancelForm = () => {
+    setShowNewBillForm(false);
+    setEditingBillId(null);
+    setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: 5, paymentSource: '' });
+  };
+
   // Calcula projeção para os próximos 6 meses
   const generateProjection = () => {
-    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const currentMonthIndex = new Date().getMonth();
-    const salary = data.salary || 0;
-    const totalFixedBills = (data.fixedBills || []).reduce((acc, bill) => acc + bill.amount, 0);
-    const monthlyBalance = salary - totalFixedBills;
+    const monthsNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const currentD = new Date();
+    
+    // Obter array de salários ordenados por data para fallback
+    const knownSalaries = Object.entries(data.monthlySalaries || {})
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(e => e[1]);
+    const lastKnownSalary = knownSalaries.length > 0 ? knownSalaries[knownSalaries.length - 1] : (data.salary || 0);
+
+    const totalBills = (data.fixedBills || []).reduce((acc, bill) => acc + bill.amount, 0);
 
     const projection = [];
     for (let i = 0; i < 6; i++) {
-      const targetMonthIndex = (currentMonthIndex + i) % 12;
+      const targetDate = new Date(currentD.getFullYear(), currentD.getMonth() + i, 1);
+      const targetYyyyMm = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      // Salário do mês alvo, se não existir pega o último conhecido
+      const monthSalary = data.monthlySalaries?.[targetYyyyMm] ?? lastKnownSalary;
+      const monthlyBalance = monthSalary - totalBills;
+
       projection.push({
-        name: months[targetMonthIndex],
-        Receitas: salary,
-        Despesas: totalFixedBills,
+        name: monthsNames[targetDate.getMonth()],
+        Receitas: monthSalary,
+        Despesas: totalBills,
         Saldo: monthlyBalance
       });
     }
     return projection;
   };
 
-  const projectionData = generateProjection();
+  const projectionData = useMemo(() => generateProjection(), [data.monthlySalaries, data.fixedBills, data.salary]);
   const totalFixedBills = (data.fixedBills || []).reduce((acc, bill) => acc + bill.amount, 0);
-  const salary = data.salary || 0;
-  const saldoPrevisto = salary - totalFixedBills;
+  const saldoPrevisto = currentSalary - totalFixedBills;
 
   return (
     <div className="space-y-6 pb-24 animate-in fade-in duration-300">
       {/* Resumo Rápido */}
-      <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-5 shadow-lg shadow-indigo-200/50 dark:shadow-none text-white flex flex-col gap-4">
-        <div>
-          <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider mb-1">
-            Meu Salário Mensal (Fixo)
-          </p>
+      <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-5 shadow-lg shadow-indigo-200/50 dark:shadow-none text-white flex flex-col gap-4 relative overflow-hidden">
+        {/* Decorativo */}
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider">
+              Salário Previsto
+            </p>
+            <input 
+              type="month" 
+              value={selectedMonth} 
+              onChange={handleMonthChange}
+              className="bg-white/10 text-xs text-white border border-white/20 rounded-lg px-2 py-1 outline-none"
+            />
+          </div>
+          
           {isEditingSalary ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-1">
               <input
                 type="number"
                 value={tempSalary}
                 onChange={(e) => setTempSalary(e.target.value)}
                 className="bg-white/20 border border-white/30 rounded-xl px-3 py-1.5 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 w-32 font-bold"
                 placeholder="Valor"
+                autoFocus
               />
               <button
                 onClick={handleSaveSalary}
@@ -102,10 +180,13 @@ export const FinanceBudget: React.FC = () => {
           ) : (
             <div className="flex items-center gap-3">
               <p className="text-3xl font-extrabold tracking-tight">
-                {formatCurrency(salary, data.settings.currency)}
+                {formatCurrency(currentSalary, data.settings.currency)}
               </p>
               <button
-                onClick={() => setIsEditingSalary(true)}
+                onClick={() => {
+                  setTempSalary(currentSalary.toString());
+                  setIsEditingSalary(true);
+                }}
                 className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
               >
                 <Edit3 className="w-4 h-4" />
@@ -114,13 +195,13 @@ export const FinanceBudget: React.FC = () => {
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-white/20">
+        <div className="flex items-center justify-between pt-4 border-t border-white/20 relative z-10">
           <div>
-            <p className="text-indigo-100 text-xs font-semibold mb-0.5">Total Contas Fixas</p>
+            <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">TOTAL CONTAS FIXAS</p>
             <p className="text-sm font-bold">{formatCurrency(totalFixedBills, data.settings.currency)}</p>
           </div>
           <div className="text-right">
-            <p className="text-indigo-100 text-xs font-semibold mb-0.5">Saldo Previsto</p>
+            <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">SALDO NO MÊS</p>
             <p className="text-sm font-bold">{formatCurrency(saldoPrevisto, data.settings.currency)}</p>
           </div>
         </div>
@@ -153,56 +234,114 @@ export const FinanceBudget: React.FC = () => {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <p className="text-center text-[11px] text-slate-500 mt-2 font-medium">Baseado no salário e contas fixas atuais.</p>
+        <p className="text-center text-[11px] text-slate-500 mt-2 font-medium">Leva em conta salários futuros e total das contas fixas.</p>
       </div>
 
       {/* Lista de Contas Fixas */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
+      <div id="fixed-bills-section" className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-slate-900 dark:text-white text-sm">Contas Fixas</h3>
-          <button
-            onClick={() => setShowNewBillForm(!showNewBillForm)}
-            className="p-1.5 bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+          {!showNewBillForm && (
+            <button
+              onClick={() => setShowNewBillForm(true)}
+              className="p-1.5 bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {showNewBillForm && (
-          <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl space-y-3 border border-slate-200 dark:border-slate-700">
+          <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl space-y-3 border border-slate-200 dark:border-slate-700">
+            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+              {editingBillId ? 'Editar Conta' : 'Nova Conta'}
+            </h4>
+            
             <input
               type="text"
               placeholder="Nome da Conta"
               value={newBill.name}
               onChange={(e) => setNewBill({ ...newBill, name: e.target.value })}
-              className="w-full text-sm p-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
-            <div className="flex gap-2">
-              <input
-                type="number"
-                placeholder="Valor"
-                value={newBill.amount || ''}
-                onChange={(e) => setNewBill({ ...newBill, amount: Number(e.target.value) })}
-                className="w-1/2 text-sm p-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
-              <select
-                value={newBill.category}
-                onChange={(e) => setNewBill({ ...newBill, category: e.target.value })}
-                className="w-1/2 text-sm p-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              >
-                <option value="Moradia">Moradia</option>
-                <option value="Educação">Educação</option>
-                <option value="Assinaturas">Assinaturas</option>
-                <option value="Saúde">Saúde</option>
-                <option value="Outros">Outros</option>
-              </select>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Valor</label>
+                <input
+                  type="number"
+                  placeholder="Valor"
+                  value={newBill.amount || ''}
+                  onChange={(e) => setNewBill({ ...newBill, amount: Number(e.target.value) })}
+                  className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Categoria</label>
+                <select
+                  value={newBill.category}
+                  onChange={(e) => setNewBill({ ...newBill, category: e.target.value })}
+                  className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                >
+                  <option value="Água">Água</option>
+                  <option value="Assinaturas">Assinaturas</option>
+                  <option value="Energia">Energia</option>
+                  <option value="Internet">Internet</option>
+                  <option value="IPTU">IPTU</option>
+                  <option value="IPVA">IPVA</option>
+                  <option value="Streaming">Streaming</option>
+                  <option value="Telefonia">Telefonia</option>
+                  <option value="Parcela Terreno">Parcela Terreno</option>
+                  <option value="Parcela Veículo">Parcela Veículo</option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
             </div>
-            <button
-              onClick={handleAddBill}
-              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-colors"
-            >
-              Adicionar Conta
-            </button>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Dia do Vencimento</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="Ex: 5"
+                  value={newBill.dueDate || ''}
+                  onChange={(e) => setNewBill({ ...newBill, dueDate: Number(e.target.value) })}
+                  className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Débito</label>
+                <select
+                  value={newBill.paymentSource}
+                  onChange={(e) => setNewBill({ ...newBill, paymentSource: e.target.value })}
+                  className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                >
+                  <option value="">Não especificado</option>
+                  {data.wallets.map(w => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleCancelForm}
+                className="flex-1 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveBill}
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-colors"
+              >
+                Salvar Conta
+              </button>
+            </div>
           </div>
         )}
 
@@ -212,28 +351,57 @@ export const FinanceBudget: React.FC = () => {
               Nenhuma conta fixa cadastrada.
             </p>
           ) : (
-            data.fixedBills.map((bill) => (
-              <div
-                key={bill.id}
-                className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:border-indigo-200 transition-colors group"
-              >
-                <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">{bill.name}</p>
-                  <p className="text-[10px] text-slate-500 font-medium">{bill.category}</p>
+            data.fixedBills.map((bill) => {
+              const walletName = data.wallets.find(w => w.id === bill.paymentSource)?.name;
+
+              return (
+                <div
+                  key={bill.id}
+                  className="flex flex-col p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:border-indigo-200 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{bill.name}</p>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">{bill.category}</p>
+                    </div>
+                    <span className="text-sm font-extrabold text-pink-600 dark:text-pink-400 whitespace-nowrap">
+                      - {formatCurrency(bill.amount, data.settings.currency)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-2 mt-1">
+                    <div className="flex items-center gap-3">
+                      {bill.dueDate && (
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold">
+                          <Calendar className="w-3 h-3" /> Dia {bill.dueDate}
+                        </div>
+                      )}
+                      {walletName && (
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold">
+                          <Wallet className="w-3 h-3" /> {walletName}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Botões sempre visíveis mas discretos, sem depender de hover de grupo */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleEditBill(bill)}
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteBill(bill.id)}
+                        className="p-1.5 text-slate-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-lg transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-extrabold text-pink-600 dark:text-pink-400">
-                    - {formatCurrency(bill.amount, data.settings.currency)}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteBill(bill.id)}
-                    className="p-1.5 text-slate-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
