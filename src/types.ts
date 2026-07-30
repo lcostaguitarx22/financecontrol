@@ -62,6 +62,13 @@ export interface CategoryBudget {
   iconName: string;
 }
 
+export interface FixedBill {
+  id: string;
+  name: string;
+  amount: number;
+  category: string;
+}
+
 export interface RendimentoEntry {
   id: string;
   date: string;
@@ -86,6 +93,8 @@ export interface AppData {
   wallets: Wallet[];
   bills: Bill[];
   budgets: CategoryBudget[];
+  fixedBills: FixedBill[];
+  salary: number;
   rendimentos: RendimentoEntry[];
   totalAccumulatedYield: number;
 }

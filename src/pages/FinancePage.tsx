@@ -24,9 +24,11 @@ import { formatCurrency, formatDateBr } from '../utils/formatters';
 import { deleteTransaction } from '../services/storage';
 import { NewTransactionModal } from '../components/modals/NewTransactionModal';
 import { BudgetLimitsModal } from '../components/modals/BudgetLimitsModal';
+import { FinanceBudget } from '../components/FinanceBudget';
 
 export const FinancePage: React.FC = () => {
   const { data } = useAppData();
+  const [activeTab, setActiveTab] = useState<'extrato' | 'orcamento'>('extrato');
   const [showNewTxModal, setShowNewTxModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('todas');
@@ -119,17 +121,47 @@ export const FinancePage: React.FC = () => {
 
   return (
     <div className="space-y-5 pb-24 animate-in fade-in duration-300">
-      {/* Título */}
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Extrato Financeiro
-        </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Resumo de movimentações gerais
-        </p>
+      {/* Título e Sub-Navegação */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Financeiro
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Gestão e Orçamento
+          </p>
+        </div>
+        
+        {/* Toggle Extrato / Orçamento */}
+        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <button
+            onClick={() => setActiveTab('extrato')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+              activeTab === 'extrato'
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            Extrato
+          </button>
+          <button
+            onClick={() => setActiveTab('orcamento')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+              activeTab === 'orcamento'
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            Orçamento
+          </button>
+        </div>
       </div>
 
-      {/* Botões de Ação Superior */}
+      {activeTab === 'orcamento' ? (
+        <FinanceBudget />
+      ) : (
+        <>
+          {/* Botões de Ação Superior */}
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={handleExportCsv}
@@ -349,6 +381,8 @@ export const FinancePage: React.FC = () => {
 
       {showNewTxModal && <NewTransactionModal onClose={() => setShowNewTxModal(false)} />}
       {showBudgetModal && <BudgetLimitsModal onClose={() => setShowBudgetModal(false)} />}
+        </>
+      )}
     </div>
   );
 };

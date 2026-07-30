@@ -19,6 +19,8 @@ export const initialAppData: AppData = {
   wallets: [],
   bills: [],
   budgets: [],
+  fixedBills: [],
+  salary: 0,
   rendimentos: [],
   totalAccumulatedYield: 0,
 };
