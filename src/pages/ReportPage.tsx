@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency, formatDateBr } from '../utils/formatters';
-import { exportToCSV, ReportItem } from '../utils/exportUtils';
+import { exportToCSV, exportToPDF, ReportItem } from '../utils/exportUtils';
 
 interface ReportPageProps {
   onBack: () => void;
@@ -110,9 +110,14 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
     return { receitas, despesas, total: receitas - despesas };
   }, [filteredData]);
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     const filename = `Relatorio_Financeiro_${startDate}_a_${endDate}`;
     exportToCSV(filteredData, filename);
+  };
+
+  const handleExportPDF = () => {
+    const filename = `Relatorio_Financeiro_${startDate}_a_${endDate}`;
+    exportToPDF(filteredData, filename);
   };
 
   const getStatusColor = (status: string) => {
@@ -158,14 +163,24 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
               <h1 className="text-lg font-bold text-slate-900 dark:text-white">Relatório Detalhado</h1>
             </div>
           </div>
-          <button
-            onClick={handleExport}
-            disabled={filteredData.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Exportar CSV</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCSV}
+              disabled={filteredData.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">CSV</span>
+            </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={filteredData.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+          </div>
         </div>
       </div>
 
