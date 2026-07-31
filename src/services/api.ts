@@ -1,6 +1,6 @@
 export interface LivePrices {
   usdToBrl: number;
-  cryptos: Record<string, { usd: number; brl: number }>;
+  cryptos: Record<string, { usd: number; brl: number; change24h: number }>;
 }
 
 /**
@@ -22,11 +22,11 @@ export async function fetchUSDBRL(): Promise<number> {
  * Busca cotações de criptomoedas em Dólar e Real (Binance)
  * @param symbols Ex: ['BTC', 'ETH', 'SOL']
  */
-export async function fetchCryptoPrices(symbols: string[]): Promise<Record<string, { usd: number; brl: number }>> {
+export async function fetchCryptoPrices(symbols: string[]): Promise<Record<string, { usd: number; brl: number; change24h: number }>> {
   if (symbols.length === 0) return {};
   
   try {
-    const result: Record<string, { usd: number; brl: number }> = {};
+    const result: Record<string, { usd: number; brl: number; change24h: number }> = {};
     const usdToBrl = await fetchUSDBRL();
     
     // Binance API não permite consulta em lote facilmente pela URL simples sem formato específico,
@@ -35,18 +35,20 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<Record<strin
       const upperSym = sym.toUpperCase();
       // Casos especiais como USDT não precisam buscar o próprio par USDTUSDT, podemos assumir 1.0
       if (upperSym === 'USDT' || upperSym === 'USDC') {
-        result[upperSym] = { usd: 1.0, brl: usdToBrl };
+        result[upperSym] = { usd: 1.0, brl: usdToBrl, change24h: 0 };
         return;
       }
 
       try {
-        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${upperSym}USDT`);
+        const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${upperSym}USDT`);
         if (res.ok) {
           const data = await res.json();
-          const usdPrice = parseFloat(data.price);
+          const usdPrice = parseFloat(data.lastPrice);
+          const change24h = parseFloat(data.priceChangePercent);
           result[upperSym] = {
             usd: usdPrice,
             brl: usdPrice * usdToBrl,
+            change24h: change24h
           };
         }
       } catch (err) {

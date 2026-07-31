@@ -528,9 +528,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(crypto.amount * getLivePriceBrl(crypto), data.settings.currency)}</p>
-                  <p className={`text-[10px] font-bold ${crypto.change24h >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {crypto.change24h >= 0 ? '+' : ''}{crypto.change24h}%
-                  </p>
+                  {(() => {
+                    const liveChange = livePrices?.cryptos[crypto.symbol.toUpperCase()]?.change24h ?? crypto.change24h ?? 0;
+                    return (
+                      <p className={`text-[10px] font-bold ${liveChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {liveChange >= 0 ? '+' : ''}{liveChange.toFixed(2)}%
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
             ))
