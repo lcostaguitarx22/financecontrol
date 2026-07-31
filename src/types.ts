@@ -52,6 +52,7 @@ export interface Bill {
   iconName?: string;
   isUrgent?: boolean;
   transactionId?: string;
+  fixedBillId?: string;
 }
 
 export interface CategoryBudget {

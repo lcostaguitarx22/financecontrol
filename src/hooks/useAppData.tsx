@@ -70,44 +70,46 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
               settings: { ...initialAppData.settings, ...(dbData.settings || {}) }
             } as AppData;
             
-            // --- INÍCIO AUTO-PAYER ---
-            // Verifica se há contas pendentes que atingiram a data de vencimento
-            let needsUpdate = false;
+            // --- INÍCIO AUTO GENERATE FIXED BILLS ---
             const todayStr = new Date().toISOString().split('T')[0];
-            const updatedBills = [...loadedData.bills];
-            const newTransactions = [];
-
-            for (let i = 0; i < updatedBills.length; i++) {
-              const bill = updatedBills[i];
-              if (bill.status === 'pendente') {
-                const parts = bill.dueDate.split('/');
-                if (parts.length === 3) {
-                  const billDateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                  if (billDateStr <= todayStr) {
-                    const txId = `tx-auto-${Date.now()}-${i}`;
-                    updatedBills[i] = { ...bill, status: 'pago', transactionId: txId };
-                    newTransactions.push({
-                      id: txId,
-                      description: `Pgto Automático: ${bill.title}`,
-                      amount: bill.amount,
-                      type: 'despesa' as const,
-                      category: bill.category || 'Utilidades',
-                      date: billDateStr,
-                    });
-                    needsUpdate = true;
-                  }
-                }
+            const currentYyyyMm = todayStr.substring(0, 7);
+            
+            let needsUpdate = false;
+            let updatedBills = [...loadedData.bills];
+            
+            (loadedData.fixedBills || []).forEach(fixedBill => {
+              let dueDay = "01";
+              if (fixedBill.dueDate) {
+                const parts = fixedBill.dueDate.split('-');
+                if (parts.length === 3) dueDay = parts[2];
               }
-            }
+
+              const expectedDueDate = `${currentYyyyMm}-${dueDay}`;
+              
+              const alreadyExists = updatedBills.some(b => 
+                b.fixedBillId === fixedBill.id && b.dueDate.startsWith(currentYyyyMm)
+              );
+
+              if (!alreadyExists) {
+                const newBill = {
+                  id: `b-auto-${fixedBill.id}-${currentYyyyMm}`,
+                  title: fixedBill.name,
+                  amount: fixedBill.amount,
+                  dueDate: expectedDueDate,
+                  status: 'pendente' as const,
+                  category: fixedBill.category,
+                  fixedBillId: fixedBill.id,
+                };
+                updatedBills.unshift(newBill);
+                needsUpdate = true;
+              }
+            });
 
             if (needsUpdate) {
               loadedData.bills = updatedBills;
-              // adiciona as novas transações no topo
-              loadedData.transactions = [...newTransactions, ...loadedData.transactions];
-              // Atualiza o firestore silenciosamente
               setDoc(docRef, loadedData);
             }
-            // --- FIM AUTO-PAYER ---
+            // --- FIM AUTO GENERATE FIXED BILLS ---
 
             setData(loadedData);
           } else {
