@@ -104,4 +104,5 @@ export interface AppData {
   salary?: number; // Deprecated, keep for backward compatibility temporarily
   rendimentos: RendimentoEntry[];
   totalAccumulatedYield: number;
+  deletedGeneratedBills?: string[];
 }

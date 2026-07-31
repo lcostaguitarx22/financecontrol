@@ -84,18 +84,21 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 if (parts.length === 3) dueDay = parts[2];
               }
 
-              const expectedDueDate = `${currentYyyyMm}-${dueDay}`;
+              const [yyyy, mm] = currentYyyyMm.split('-');
+              const expectedDueDateBr = `${dueDay}/${mm}/${yyyy}`;
               
-              const alreadyExists = updatedBills.some(b => 
-                b.fixedBillId === fixedBill.id && b.dueDate.startsWith(currentYyyyMm)
-              );
+              const billId = `b-auto-${fixedBill.id}-${currentYyyyMm}`;
+              const isDeleted = (loadedData.deletedGeneratedBills || []).includes(billId);
+              
+              // We check by ID to see if it already exists or if it was deleted
+              const alreadyExists = updatedBills.some(b => b.id === billId) || isDeleted;
 
               if (!alreadyExists) {
                 const newBill = {
-                  id: `b-auto-${fixedBill.id}-${currentYyyyMm}`,
+                  id: billId,
                   title: fixedBill.name,
                   amount: fixedBill.amount,
-                  dueDate: expectedDueDate,
+                  dueDate: expectedDueDateBr,
                   status: 'pendente' as const,
                   category: fixedBill.category,
                   fixedBillId: fixedBill.id,

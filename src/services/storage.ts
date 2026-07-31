@@ -113,6 +113,12 @@ export async function toggleBillPaid(id: string): Promise<void> {
 export async function deleteBill(id: string): Promise<void> {
   const data = await getAppData();
   data.bills = data.bills.filter((b) => b.id !== id);
+  if (id.startsWith('b-auto-')) {
+    if (!data.deletedGeneratedBills) data.deletedGeneratedBills = [];
+    if (!data.deletedGeneratedBills.includes(id)) {
+      data.deletedGeneratedBills.push(id);
+    }
+  }
   await saveAppData(data);
 }
 
