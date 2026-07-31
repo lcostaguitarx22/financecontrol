@@ -171,7 +171,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   const twoDaysFromNow = new Date();
   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
   const twoDaysStr = twoDaysFromNow.toISOString().split('T')[0];
-  
+
   const urgentBills = upcomingBills.filter(b => b.dueDate <= twoDaysStr);
   const topUrgentBills = urgentBills.slice(0, 3);
 
@@ -304,6 +304,35 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             </div>
           </div>
         </div>
+
+        {/* 4. ORÇAMENTO PREVISTO (Próximo Mês) */}
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-5 shadow-sm text-white">
+          <div className="flex items-center gap-2 mb-4">
+            <Wallet className="w-4 h-4 text-emerald-400" />
+            <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário Previsto</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário previsto + Saldo anterior</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx + saldoCorrente, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
+            </div>
+            <div className="col-span-2 md:col-span-1 border-t border-slate-700 md:border-none pt-3 md:pt-0">
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+              <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {formatCurrency(budgetRestanteProx, data.settings.currency)}
+              </p>
+            </div>
+          </div>
+        </div>
+
 
         {/* Card: Fluxo de Caixa (Mês) */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex items-center gap-4">
@@ -475,32 +504,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
           )}
         </div>
       </div>
-
-      {/* 4. ORÇAMENTO PREVISTO (Próximo Mês) */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-5 shadow-sm text-white">
-        <div className="flex items-center gap-2 mb-4">
-          <Wallet className="w-4 h-4 text-emerald-400" />
-          <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div>
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Renda Esperada</p>
-            <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
-            <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
-          </div>
-          <div className="col-span-2 md:col-span-1 border-t border-slate-700 md:border-none pt-3 md:pt-0">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
-            <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {formatCurrency(budgetRestanteProx, data.settings.currency)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-
 
       {/* 6. VARIAÇÃO DE CRIPTO */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">

@@ -31,11 +31,15 @@ const MorePage = lazy(() =>
 const RendimentoPage = lazy(() =>
   import('./pages/RendimentoPage').then((module) => ({ default: module.RendimentoPage }))
 );
+const ReportPage = lazy(() =>
+  import('./pages/ReportPage').then((module) => ({ default: module.ReportPage }))
+);
 
 export default function App() {
   const { data, user, loading } = useAppData();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showRendimentoPage, setShowRendimentoPage] = useState(false);
+  const [showReportPage, setShowReportPage] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Inicializar tema e onboarding na primeira execução
@@ -118,6 +122,16 @@ export default function App() {
                 >
                   <RendimentoPage onBack={() => setShowRendimentoPage(false)} />
                 </motion.div>
+              ) : showReportPage ? (
+                <motion.div
+                  key="report"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ReportPage onBack={() => setShowReportPage(false)} />
+                </motion.div>
               ) : (
                 <motion.div
                   key={activeTab}
@@ -136,7 +150,10 @@ export default function App() {
                   {activeTab === 'financeiro' && <FinancePage />}
                   {activeTab === 'contas' && <BillsPage />}
                   {activeTab === 'mais' && (
-                    <MorePage onOpenRendimento={() => setShowRendimentoPage(true)} />
+                    <MorePage 
+                      onOpenRendimento={() => setShowRendimentoPage(true)} 
+                      onOpenReport={() => setShowReportPage(true)}
+                    />
                   )}
                 </motion.div>
               )}
@@ -145,7 +162,7 @@ export default function App() {
         </main>
 
         {/* Navegação Inferior */}
-        {!showRendimentoPage && (
+        {(!showRendimentoPage && !showReportPage) && (
           <BottomNav activeTab={activeTab} onChangeTab={handleTabChange} />
         )}
 
