@@ -99,6 +99,7 @@ export default function App() {
           title={showRendimentoPage ? 'Resumo de Rendimentos' : 'Finance Control'}
           showBack={showRendimentoPage}
           onBack={() => setShowRendimentoPage(false)}
+          onSettingsClick={() => handleTabChange('mais')}
         />
 
         {/* Conteúdo com Lazy Loading e Transições de Animação */}

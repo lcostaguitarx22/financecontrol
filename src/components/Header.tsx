@@ -4,20 +4,32 @@
  */
 
 import React, { useState } from 'react';
-import { Bell, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Bell, Sparkles, CheckCircle2, Wallet, Settings, LogOut } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
 import { NotificationModal } from './NotificationModal';
+import { auth } from '../services/firebase';
+import { signOut } from 'firebase/auth';
 
 interface HeaderProps {
   title?: string;
   subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
+  onSettingsClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title = 'Finance Control', showBack, onBack }) => {
+export const Header: React.FC<HeaderProps> = ({ title = 'Finance Control', showBack, onBack, onSettingsClick }) => {
   const { data, user } = useAppData();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+    }
+  };
 
   // Calcular número de alertas pendentes
   const pendingBillsCount = data.bills.filter((b) => b.status !== 'pago').length;
@@ -41,14 +53,46 @@ export const Header: React.FC<HeaderProps> = ({ title = 'Finance Control', showB
               </svg>
             </button>
           ) : (
-            <div className="relative group cursor-pointer" id="header-user-avatar">
-              <img
-                src={userPhoto}
-                alt="Perfil do Usuário"
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/80 shadow-md shadow-indigo-200/50 dark:shadow-none group-hover:scale-105 transition-transform"
-                referrerPolicy="no-referrer"
-              />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-white dark:border-slate-900 rounded-full animate-pulse"></span>
+            <div className="relative">
+              <div 
+                className="relative group cursor-pointer" 
+                id="header-user-avatar"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                <img
+                  src={userPhoto}
+                  alt="Perfil do Usuário"
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/80 shadow-md shadow-indigo-200/50 dark:shadow-none group-hover:scale-105 transition-transform"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-white dark:border-slate-900 rounded-full animate-pulse"></span>
+              </div>
+
+              {showUserMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-indigo-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        onSettingsClick && onSettingsClick();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                      Configurações
+                    </button>
+                    <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-2" />
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sair da Conta
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -59,6 +103,7 @@ export const Header: React.FC<HeaderProps> = ({ title = 'Finance Control', showB
               </p>
             )}
             <h1 className="font-extrabold text-indigo-600 dark:text-indigo-400 text-lg tracking-tight flex items-center gap-1.5 leading-none">
+              <Wallet className="w-5 h-5 text-indigo-500" />
               {title}
             </h1>
           </div>
