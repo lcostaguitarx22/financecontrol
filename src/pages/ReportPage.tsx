@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  ArrowLeft, Download, Filter, FileSpreadsheet, 
-  Search, Calendar, TrendingUp, TrendingDown, 
-  Receipt, CheckCircle2, Clock 
+import {
+  ArrowLeft, Download, Filter, FileSpreadsheet,
+  Search, Calendar, TrendingUp, TrendingDown,
+  Receipt, CheckCircle2, Clock
 } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency, formatDateBr } from '../utils/formatters';
@@ -14,7 +14,7 @@ interface ReportPageProps {
 
 export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
   const { data } = useAppData();
-  
+
   // Pegar primeiro dia do mês atual
   const today = new Date();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
@@ -48,7 +48,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
     data.bills.forEach(b => {
       let type: ReportItem['type'] = 'Conta Variável';
       if (b.fixedBillId) type = 'Conta Fixa';
-      
+
       let status: ReportItem['status'] = 'Pendente';
       if (b.status === 'pago') status = 'Pago';
       if (b.status === 'atrasado') status = 'Atrasado';
@@ -148,7 +148,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* HEADER */}
       <div className="bg-white dark:bg-slate-900 border-b border-indigo-100 dark:border-slate-800 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
@@ -184,8 +184,8 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 mt-6 space-y-6">
-        
+      <div className="max-w-7xl mx-auto px-4 mt-6 space-y-6">
+
         {/* FILTROS */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 space-y-4">
           <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-bold mb-2">
@@ -350,9 +350,8 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
                           {item.status}
                         </span>
                       </td>
-                      <td className={`py-3 text-right text-xs font-black whitespace-nowrap ${
-                        item.type === 'Receita' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                      }`}>
+                      <td className={`py-3 text-right text-xs font-black whitespace-nowrap ${item.type === 'Receita' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                        }`}>
                         {item.type === 'Receita' ? '+' : '-'} {formatCurrency(item.amount, data.settings.currency)}
                       </td>
                     </tr>
