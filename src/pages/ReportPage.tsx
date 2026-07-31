@@ -145,9 +145,9 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
   const categories = data.settings.categories || [];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="min-h-full bg-slate-50 dark:bg-slate-950 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* HEADER */}
-      <div className="bg-white dark:bg-slate-900 border-b border-indigo-100 dark:border-slate-800 sticky top-0 z-30">
+      <div className="bg-white dark:bg-slate-900 border-b border-indigo-100 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -204,8 +204,11 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full text-sm py-2 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white"
+                    className="w-full text-sm py-2 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white [&::-webkit-datetime-edit]:text-transparent [&::-webkit-datetime-edit]:dark:text-transparent"
                   />
+                  <div className="absolute left-9 top-1/2 -translate-y-1/2 pointer-events-none text-sm font-semibold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800 px-1 py-0.5">
+                    {formatDateBr(startDate)}
+                  </div>
                 </div>
               </div>
               <div className="flex-1">
@@ -216,8 +219,11 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full text-sm py-2 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white"
+                    className="w-full text-sm py-2 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white [&::-webkit-datetime-edit]:text-transparent [&::-webkit-datetime-edit]:dark:text-transparent"
                   />
+                  <div className="absolute left-9 top-1/2 -translate-y-1/2 pointer-events-none text-sm font-semibold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800 px-1 py-0.5">
+                    {formatDateBr(endDate)}
+                  </div>
                 </div>
               </div>
             </div>
