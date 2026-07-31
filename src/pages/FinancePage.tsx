@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   TrendingUp,
   Trash2,
+  FileSpreadsheet
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
@@ -26,7 +27,11 @@ import { NewTransactionModal } from '../components/modals/NewTransactionModal';
 import { BudgetLimitsModal } from '../components/modals/BudgetLimitsModal';
 import { FinanceBudget } from '../components/FinanceBudget';
 
-export const FinancePage: React.FC = () => {
+interface FinancePageProps {
+  onOpenReport: () => void;
+}
+
+export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
   const { data } = useAppData();
   const [activeTab, setActiveTab] = useState<'extrato' | 'orcamento'>('extrato');
   const [showNewTxModal, setShowNewTxModal] = useState(false);
@@ -127,31 +132,6 @@ export const FinancePage: React.FC = () => {
     }
   }
 
-  // Função para exportar CSV real
-  const handleExportCsv = () => {
-    const headers = ['ID', 'Descrição', 'Valor', 'Tipo', 'Categoria', 'Data'];
-    const rows = data.transactions.map((t) => [
-      t.id,
-      `"${t.description}"`,
-      t.amount,
-      t.type,
-      `"${t.category}"`,
-      t.date,
-    ]);
-
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `extrato_financecontrol_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
       case 'alimentação':
@@ -223,11 +203,11 @@ export const FinancePage: React.FC = () => {
           {/* Botões de Ação Superior */}
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={handleExportCsv}
-              id="finance-export-csv-btn"
-              className="py-2.5 px-3 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 hover:bg-indigo-50/50 shadow-xs transition-colors"
+              onClick={onOpenReport}
+              id="finance-report-btn"
+              className="py-2.5 px-3 bg-white dark:bg-slate-800 border border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold rounded-2xl text-[11px] flex items-center justify-center gap-2 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 shadow-xs transition-colors"
             >
-              <Download className="w-4 h-4 text-indigo-600" /> Exportar CSV
+              <FileSpreadsheet className="w-4 h-4" /> Relatórios Avançados
             </button>
             <button
               onClick={() => setShowNewTxModal(true)}

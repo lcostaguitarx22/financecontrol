@@ -147,12 +147,11 @@ export default function App() {
                     />
                   )}
                   {activeTab === 'cripto' && <CryptoPage />}
-                  {activeTab === 'financeiro' && <FinancePage />}
+                  {activeTab === 'financeiro' && <FinancePage onOpenReport={() => setShowReportPage(true)} />}
                   {activeTab === 'contas' && <BillsPage />}
                   {activeTab === 'mais' && (
                     <MorePage 
                       onOpenRendimento={() => setShowRendimentoPage(true)} 
-                      onOpenReport={() => setShowReportPage(true)}
                     />
                   )}
                 </motion.div>

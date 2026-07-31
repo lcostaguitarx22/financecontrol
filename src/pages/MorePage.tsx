@@ -42,10 +42,9 @@ import { formatCurrency } from '../utils/formatters';
 
 interface MorePageProps {
   onOpenRendimento: () => void;
-  onOpenReport: () => void;
 }
 
-export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento, onOpenReport }) => {
+export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
   const { data, setData } = useAppData();
   const [isSyncing, setIsSyncing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -325,23 +324,6 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento, onOpenRepo
             )}
           </div>
         )}
-      </div>
-
-      {/* Relatórios Avançados */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 space-y-4">
-        <div className="flex items-center gap-2 mb-2">
-          <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-          <h3 className="font-bold text-slate-900 dark:text-white text-sm">Relatórios Avançados</h3>
-        </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-          Exporte e filtre suas finanças detalhadamente.
-        </p>
-        <button
-          onClick={onOpenReport}
-          className="w-full py-3 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 font-extrabold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all border border-emerald-200 dark:border-emerald-800"
-        >
-          <FileSpreadsheet className="w-4 h-4" /> Acessar Relatórios
-        </button>
       </div>
 
       {/* Card 4: Sincronização de Dados (Vibrant Banner) */}
