@@ -195,7 +195,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Datas */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1">
                 <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Data Inicial</label>
                 <div className="relative">
@@ -254,7 +254,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
             </div>
 
             {/* Categoria e Status */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1">
                 <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Categoria</label>
                 <select
@@ -286,7 +286,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
         </div>
 
         {/* RESUMO DOS DADOS FILTRADOS */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm border border-emerald-100 dark:border-emerald-900/30 text-center">
             <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Entradas</p>
             <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(stats.receitas, data.settings.currency)}</p>

@@ -42,10 +42,10 @@ export function formatDateBr(dateString: string): string {
     }
 
     if (year && month && day) {
-      const shortYear = year.length === 4 ? year.slice(-2) : year;
+      const fullYear = year.length === 2 ? `20${year}` : year;
       const padDay = day.padStart(2, '0');
       const padMonth = month.padStart(2, '0');
-      return `${padDay}/${padMonth}/${shortYear}`;
+      return `${padDay}/${padMonth}/${fullYear}`;
     }
   } catch (e) {
     // Return original
