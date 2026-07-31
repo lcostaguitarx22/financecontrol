@@ -1,6 +1,6 @@
 /**
  * @file HomePage.tsx
- * @description Tela Visão Geral (Home) com cálculos dinâmicos reais usando dados do banco.
+ * @description Tela Visão Geral (Home) com calendário, próximas contas, transações, orçamento previsto e cripto.
  */
 
 import React, { useState } from 'react';
@@ -12,11 +12,17 @@ import {
   Zap,
   ArrowUpRight,
   ChevronDown,
+  Clock,
+  Activity,
+  Wallet,
+  ArrowDownToLine,
+  ArrowUpFromLine
 } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
-import { formatCurrency, formatBtc, formatDateBr } from '../utils/formatters';
+import { formatCurrency, formatDateBr } from '../utils/formatters';
 import { TabType } from '../types';
+import { DayDetailsModal, CalendarEvent } from '../components/modals/DayDetailsModal';
 
 interface HomePageProps {
   onNavigateTab: (tab: TabType) => void;
@@ -27,22 +33,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   const { data, livePrices } = useAppData();
   const [period, setPeriod] = useState('Este Mês');
 
-  // Sparkline mock data para o card de cripto
-  const cryptoSparklineData = [
-    { v: 10 }, { v: 15 }, { v: 14 }, { v: 22 }, { v: 18 },
-    { v: 20 }, { v: 28 }, { v: 24 }, { v: 32 }, { v: 38 },
-  ];
-
   // ==========================================
-  // CÁLCULOS DINÂMICOS
+  // CÁLCULOS GERAIS
   // ==========================================
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  const currentMonthIdx = new Date().getMonth();
+  const currentYearIdx = new Date().getFullYear();
 
   const isThisMonth = (dateStr: string) => {
     if (!dateStr) return false;
     const d = new Date(dateStr);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    return d.getMonth() === currentMonthIdx && d.getFullYear() === currentYearIdx;
   };
 
   const receitasMes = data.transactions
@@ -61,6 +61,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     const livePrice = livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
     return acc + (c.amount * livePrice);
   }, 0);
+
   const faturaCartao = data.bills
     .filter((b) => b.paymentMethod === 'cartao' && b.status !== 'pago')
     .reduce((acc, b) => acc + b.amount, 0);
@@ -69,12 +70,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const pendingBills = data.bills.filter((b) => b.status !== 'pago');
   const billsTotal = pendingBills.reduce((acc, b) => acc + b.amount, 0);
-
-  const getLivePriceBrl = (c: any) => livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
-
-  const topCrypto = data.cryptos.length > 0
-    ? [...data.cryptos].sort((a, b) => (b.amount * getLivePriceBrl(b)) - (a.amount * getLivePriceBrl(a)))[0]
-    : null;
 
   const cashFlowData = (receitasMes === 0 && despesasMes === 0)
     ? [{ name: 'Vazio', value: 1, color: '#e2e8f0' }]
@@ -85,15 +80,143 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const savingsRate = receitasMes > 0 ? ((receitasMes - despesasMes) / receitasMes) * 100 : 0;
 
+  // ==========================================
+  // 1. CALENDÁRIO
+  // ==========================================
+  const today = new Date();
+  const [calendarDate, setCalendarDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const currentYear = calendarDate.getFullYear();
+  const currentMonth = calendarDate.getMonth();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+  const paymentDay = Math.min(30, daysInMonth);
+  const currentYyyyMm = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  
+  const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const monthName = monthsNames[currentMonth];
+
+  const [selectedDay, setSelectedDay] = useState<{ date: string; events: CalendarEvent[] } | null>(null);
+
+  const handlePrevMonth = () => setCalendarDate(new Date(currentYear, currentMonth - 1, 1));
+  const handleNextMonth = () => setCalendarDate(new Date(currentYear, currentMonth + 1, 1));
+
+  const getEventsForDay = (day: number): CalendarEvent[] => {
+    const events: CalendarEvent[] = [];
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayStr = String(day).padStart(2, '0');
+
+    // Contas a pagar
+    data.bills.forEach(b => {
+      if (b.dueDate === dateStr) {
+        events.push({ id: b.id, title: b.title, amount: b.amount, type: 'debito', source: 'conta', status: b.status });
+      }
+    });
+
+    // Contas fixas (evitando duplicação)
+    (data.fixedBills || []).forEach(b => {
+      const bRecurrence = b.recurrence || 'mensal';
+      const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+
+      let shouldShow = true;
+      if (bMonthKey) {
+        if (bRecurrence === 'unico') {
+          shouldShow = bMonthKey === currentYyyyMm;
+        } else {
+          shouldShow = bMonthKey <= currentYyyyMm;
+        }
+      }
+
+      if (shouldShow && b.dueDate && b.dueDate.split('-')[2] === dayStr) {
+        const alreadyGenerated = data.bills.some(realBill => realBill.fixedBillId === b.id && realBill.dueDate.startsWith(currentYyyyMm));
+        if (!alreadyGenerated) {
+          events.push({ id: b.id, title: b.title, amount: b.amount, type: 'debito', source: 'conta_fixa' });
+        }
+      }
+    });
+
+    // Transações
+    data.transactions.forEach(t => {
+      if (t.date === dateStr) {
+        events.push({ id: t.id, title: t.description, amount: t.amount, type: t.type === 'receita' ? 'renda' : 'debito', source: 'transacao' });
+      }
+    });
+
+    // Salário
+    if (day === paymentDay) {
+      const sal = data.monthlySalaries?.[currentYyyyMm] ?? data.salary;
+      if (sal && sal > 0) {
+        events.push({ id: 'salary-' + currentYyyyMm, title: 'Salário Mensal Fixo', amount: sal, type: 'renda', source: 'salario' });
+      }
+    }
+
+    return events;
+  };
+
+  const handleDayClick = (day: number) => {
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const events = getEventsForDay(day);
+    setSelectedDay({ date: dateStr, events });
+  };
+
+  // ==========================================
+  // 3. PRÓXIMAS CONTAS (Até 8)
+  // ==========================================
+  const upcomingBills = pendingBills
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .slice(0, 8);
+
+  // ==========================================
+  // 4. ORÇAMENTO PREVISTO (MÊS SEGUINTE)
+  // ==========================================
+  const nextMonthDate = new Date();
+  nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+  const nextMonthYear = nextMonthDate.getFullYear();
+  const nextMonthIndex = nextMonthDate.getMonth();
+  const nextMonthYyyyMm = `${nextMonthYear}-${String(nextMonthIndex + 1).padStart(2, '0')}`;
+  
+  const expectedSalaryNextMonth = data.monthlySalaries?.[nextMonthYyyyMm] ?? data.salary ?? 0;
+  const expectedExtrasNextMonth = data.monthlyExtras?.[nextMonthYyyyMm] ?? 0;
+  const totalRendaProx = expectedSalaryNextMonth + expectedExtrasNextMonth;
+
+  const projectedFixedBills = (data.fixedBills || []).reduce((acc, b) => {
+      const bRecurrence = b.recurrence || 'mensal';
+      const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+      let shouldShow = true;
+      if (bMonthKey) {
+        if (bRecurrence === 'unico') {
+          shouldShow = bMonthKey === nextMonthYyyyMm;
+        } else {
+          shouldShow = bMonthKey <= nextMonthYyyyMm;
+        }
+      }
+      return acc + (shouldShow ? b.amount : 0);
+  }, 0);
+
+  const budgetRestanteProx = totalRendaProx - projectedFixedBills;
+  const mesSeguinteNome = monthsNames[nextMonthIndex];
+
+  // ==========================================
+  // 5. TRANSAÇÕES RECENTES (Até 8)
+  // ==========================================
+  const recentTransactions = data.transactions.slice(0, 8);
+
+  // ==========================================
+  // 6. VARIAÇÃO DE CRIPTO
+  // ==========================================
+  const getLivePriceBrl = (c: any) => livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
+  const sortedCryptos = [...data.cryptos].sort((a, b) => (b.amount * getLivePriceBrl(b)) - (a.amount * getLivePriceBrl(a)));
+
+
   return (
-    <div className="space-y-5 pb-24 animate-in fade-in duration-300">
-      {/* Título & Seletor de Período */}
+    <div className="space-y-6 pb-24 animate-in fade-in duration-300">
+      
+      {/* Header Info */}
       <div className="flex items-center justify-between pt-2">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             Visão Geral
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Resumo financeiro em tempo real</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Tudo em um só lugar</p>
         </div>
         <div className="relative">
           <select
@@ -110,142 +233,95 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         </div>
       </div>
 
-      {/* Card 1: Saldo Geral Consolidado */}
-      <div
-        onClick={onOpenRendimento}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white p-6 shadow-xl shadow-indigo-200/60 dark:shadow-none border border-indigo-500/30 cursor-pointer group transition-transform active:scale-[0.99]"
-      >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex justify-between items-start mb-1">
-          <span className="text-[11px] font-bold tracking-wider text-indigo-200 uppercase">
-            Saldo Geral Consolidado
-          </span>
-          <span className="text-xs text-pink-100 bg-pink-500/30 border border-pink-400/40 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-semibold">
-            <TrendingUp className="w-3 h-3" /> Atualizado
-          </span>
+      {/* 1. VISÃO CALENDÁRIO */}
+      <div className="p-4 bg-white dark:bg-slate-900 rounded-3xl border border-indigo-100/80 dark:border-slate-800 shadow-sm text-xs space-y-2">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+             <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+             <p className="font-bold text-slate-900 dark:text-white">Calendário Financeiro</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handlePrevMonth} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 font-bold">&lt;</button>
+            <span className="font-semibold text-slate-700 dark:text-slate-300 min-w-[80px] text-center">{monthName} {currentYear}</span>
+            <button onClick={handleNextMonth} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 font-bold">&gt;</button>
+          </div>
         </div>
-
-        <div className="text-xl font-extrabold text-white my-3 tracking-tight">
-          {formatCurrency(saldoGeral, data.settings.currency)}
+        <div className="grid grid-cols-7 gap-1 text-center font-semibold text-slate-400 text-[10px]">
+          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
         </div>
+        <div className="grid grid-cols-7 gap-1 text-center font-medium">
+          {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+            <div key={`empty-${i}`} className="py-1.5" />
+          ))}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+            const events = getEventsForDay(day);
+            const hasDebito = events.some(e => e.type === 'debito');
+            const hasRenda = events.some(e => e.type === 'renda');
 
-        <div className="pt-3 border-t border-indigo-500/40 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div>
-            <p className="text-[10px] text-indigo-200 font-medium">Conta Corrente</p>
-            <p className="text-sm font-bold text-white mt-0.5 truncate">
-              {formatCurrency(saldoCorrente, data.settings.currency)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] text-indigo-200 font-medium">Cripto</p>
-            <p className="text-sm font-bold text-white mt-0.5 truncate">
-              {formatCurrency(saldoCripto, data.settings.currency)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] text-indigo-200 font-medium">Fatura (Cartão)</p>
-            <p className="text-sm font-bold text-pink-200 mt-0.5 truncate">
-              {formatCurrency(faturaCartao, data.settings.currency)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] text-indigo-200 font-medium">Contas (Boletos)</p>
-            <p className="text-sm font-bold text-pink-200 mt-0.5 truncate">
-              {formatCurrency(billsTotal - faturaCartao, data.settings.currency)}
-            </p>
-          </div>
+            return (
+              <div
+                key={day}
+                onClick={() => handleDayClick(day)}
+                className={`py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${isToday
+                    ? 'bg-indigo-600 text-white font-bold shadow-md'
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+              >
+                <span>{day}</span>
+                <div className="flex items-center gap-0.5 mt-0.5 h-1">
+                  {hasRenda && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-emerald-500'}`} />}
+                  {hasDebito && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-300' : 'bg-rose-500'}`} />}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Insight Card */}
-      {savingsRate > 0 && (
-        <div className="bg-orange-50 border border-orange-100 dark:bg-orange-950/30 dark:border-orange-900/40 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-orange-500/10 dark:bg-orange-900/40 rounded-xl text-orange-600 dark:text-orange-400 font-bold shrink-0">
-              <Zap className="w-5 h-5" />
-            </div>
-            <p className="text-xs text-orange-950 dark:text-orange-200 leading-snug">
-              <strong>Insight:</strong> Você tem uma taxa de economia de {savingsRate.toFixed(1)}% este mês!
-            </p>
+      {/* 2. SALDO GERAL & FLUXO DE CAIXA */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Card: Saldo Geral Consolidado */}
+        <div
+          onClick={onOpenRendimento}
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white p-6 shadow-xl shadow-indigo-200/60 dark:shadow-none border border-indigo-500/30 cursor-pointer group transition-transform active:scale-[0.99]"
+        >
+          <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex justify-between items-start mb-1">
+            <span className="text-[11px] font-bold tracking-wider text-indigo-200 uppercase">
+              Saldo Consolidado
+            </span>
+            <span className="text-[10px] text-pink-100 bg-pink-500/30 border border-pink-400/40 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+              <TrendingUp className="w-3 h-3" /> Atualizado
+            </span>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-300 px-2 py-1 rounded-lg shrink-0">
-            Super
-          </span>
-        </div>
-      )}
-
-      {/* Card 2: Portfólio Cripto Top Assets */}
-      <div
-        onClick={() => onNavigateTab('cripto')}
-        className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 cursor-pointer hover:border-pink-500/40 transition-all"
-      >
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-pink-100 dark:bg-pink-950/60 flex items-center justify-center text-pink-600 dark:text-pink-300 font-black text-sm shadow-xs">
-              {topCrypto ? topCrypto.symbol.charAt(0) : '₿'}
+          <div className="text-2xl font-extrabold text-white my-3 tracking-tight">
+            {formatCurrency(saldoGeral, data.settings.currency)}
+          </div>
+          <div className="pt-3 border-t border-indigo-500/40 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-indigo-200 font-medium">Conta Corrente</p>
+              <p className="text-xs font-bold text-white mt-0.5">{formatCurrency(saldoCorrente, data.settings.currency)}</p>
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-sm">
-                Portfólio Cripto
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Top Asset</p>
+              <p className="text-[10px] text-indigo-200 font-medium">Cripto</p>
+              <p className="text-xs font-bold text-white mt-0.5">{formatCurrency(saldoCripto, data.settings.currency)}</p>
             </div>
           </div>
-          <button className="text-slate-400 hover:text-slate-600 p-1">
-            <MoreVertical className="w-4 h-4" />
-          </button>
         </div>
 
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-xl font-extrabold text-slate-900 dark:text-white">
-            {topCrypto ? `${topCrypto.amount} ${topCrypto.symbol}` : 'Nenhum ativo'}
-          </span>
-          {topCrypto && (
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${topCrypto.change24h >= 0
-              ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/60'
-              : 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/60'
-              }`}>
-              {topCrypto.change24h >= 0 ? '↑' : '↓'} {topCrypto.change24h}% (24h)
-            </span>
-          )}
-        </div>
-
-        {/* Sparkline Graphic (Pink Stroke) */}
-        <div className="h-12 w-full mt-2 opacity-50">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={cryptoSparklineData}>
-              <Line type="monotone" dataKey="v" stroke="#ec4899" strokeWidth={2.5} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Card 3: Fluxo de Caixa (Mês) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-slate-900 dark:text-white text-sm">
-            Fluxo de Caixa (Mês)
-          </h3>
-          <button
-            onClick={() => onNavigateTab('financeiro')}
-            className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-pink-600 flex items-center gap-0.5 transition-colors"
-          >
-            Ver detalhes <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-6">
-          {/* Donut Chart */}
-          <div className="w-24 h-24 shrink-0">
+        {/* Card: Fluxo de Caixa (Mês) */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex items-center gap-4">
+          <div className="w-20 h-20 shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={cashFlowData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={26}
-                  outerRadius={40}
+                  innerRadius={24}
+                  outerRadius={36}
                   paddingAngle={3}
                   dataKey="value"
                   isAnimationActive={false}
@@ -257,101 +333,173 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               </PieChart>
             </ResponsiveContainer>
           </div>
-
           <div className="space-y-3 flex-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                  Receitas
-                </span>
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Receitas</span>
+                </div>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(receitasMes, data.settings.currency)}</span>
               </div>
-              <span className="text-xs font-bold text-slate-900 dark:text-white">
-                {formatCurrency(receitasMes, data.settings.currency)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-pink-500" />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                  Despesas
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-pink-500" />
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Despesas</span>
+                </div>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(despesasMes, data.settings.currency)}</span>
               </div>
-              <span className="text-xs font-bold text-slate-900 dark:text-white">
-                {formatCurrency(despesasMes, data.settings.currency)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2 mt-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                  Despesas Agendadas
-                </span>
-              </div>
-              <span className="text-xs font-bold text-slate-900 dark:text-white">
-                {formatCurrency(billsTotal, data.settings.currency)}
-              </span>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Card 4: Contas da Semana */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm">
-              Contas da Semana
-            </h3>
-          </div>
-          <span className="text-[11px] font-bold text-pink-600 bg-pink-100 dark:bg-pink-950/80 dark:text-pink-300 px-2.5 py-0.5 rounded-full">
-            {pendingBills.length} pendente(s)
-          </span>
-        </div>
-
-        <div className="mb-3">
-          <span className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            {formatCurrency(billsTotal, data.settings.currency)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 ml-1.5 font-medium">
-            total
-          </span>
-        </div>
-
-        <div className="space-y-2">
-          {pendingBills.length === 0 ? (
-            <div className="text-center py-4 text-xs font-semibold text-slate-500">
-              Nenhuma conta pendente!
+      {savingsRate > 0 && (
+        <div className="bg-orange-50 border border-orange-100 dark:bg-orange-950/30 dark:border-orange-900/40 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-orange-500/10 dark:bg-orange-900/40 rounded-xl text-orange-600 dark:text-orange-400 font-bold shrink-0">
+              <Zap className="w-5 h-5" />
             </div>
+            <p className="text-xs text-orange-950 dark:text-orange-200 leading-snug">
+              <strong>Insight:</strong> Você tem uma taxa de economia de {savingsRate.toFixed(1)}% este mês!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 3. PRÓXIMAS CONTAS (Até 8) */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Próximas Contas</h3>
+          </div>
+          <button onClick={() => onNavigateTab('contas')} className="text-xs font-bold text-indigo-600 hover:text-pink-600 flex items-center gap-0.5">
+            Ver todas <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {upcomingBills.length === 0 ? (
+            <div className="text-center py-4 text-xs font-medium text-slate-400">Nenhuma conta pendente!</div>
           ) : (
-            pendingBills.slice(0, 2).map((bill) => (
-              <div
-                key={bill.id}
-                onClick={() => onNavigateTab('contas')}
-                className="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/50 dark:bg-slate-800/60 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
-              >
+            upcomingBills.map(bill => (
+              <div key={bill.id} onClick={() => onNavigateTab('contas')} className="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/40 dark:bg-slate-800/60 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-indigo-100 dark:hover:border-slate-700">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-pink-100 dark:bg-pink-950/60 rounded-xl text-pink-600 dark:text-pink-400">
-                    <CreditCard className="w-4 h-4" />
+                  <div className="p-2 bg-white dark:bg-slate-900 rounded-xl text-pink-500 shadow-xs border border-slate-100 dark:border-slate-800">
+                    <CreditCard className="w-3.5 h-3.5" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-white">{bill.title}</p>
-                    <p className="text-[11px] font-semibold text-pink-600 dark:text-pink-400">
-                      {formatDateBr(bill.dueDate)}
-                    </p>
+                    <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">{formatDateBr(bill.dueDate)}</p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  {formatCurrency(bill.amount, data.settings.currency)}
-                </span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(bill.amount, data.settings.currency)}</span>
               </div>
             ))
           )}
         </div>
       </div>
+
+      {/* 4. ORÇAMENTO PREVISTO (Próximo Mês) */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-5 shadow-sm text-white">
+        <div className="flex items-center gap-2 mb-4">
+          <Wallet className="w-4 h-4 text-emerald-400" />
+          <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+           <div>
+             <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Renda Esperada</p>
+             <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
+           </div>
+           <div>
+             <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
+             <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
+           </div>
+           <div className="col-span-2 md:col-span-1 border-t border-slate-700 md:border-none pt-3 md:pt-0">
+             <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+             <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {formatCurrency(budgetRestanteProx, data.settings.currency)}
+             </p>
+           </div>
+        </div>
+      </div>
+
+      {/* 5. TRANSAÇÕES RECENTES (Até 8) */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Transações Recentes</h3>
+          </div>
+          <button onClick={() => onNavigateTab('financeiro')} className="text-xs font-bold text-indigo-600 hover:text-pink-600 flex items-center gap-0.5">
+            Histórico <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {recentTransactions.length === 0 ? (
+             <div className="text-center py-4 text-xs font-medium text-slate-400">Nenhuma transação recente!</div>
+          ) : (
+            recentTransactions.map(tx => (
+              <div key={tx.id} className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                 <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${tx.type === 'receita' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600' : 'bg-pink-100 dark:bg-pink-950/50 text-pink-600'}`}>
+                       {tx.type === 'receita' ? <ArrowUpFromLine className="w-3.5 h-3.5" /> : <ArrowDownToLine className="w-3.5 h-3.5" />}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{tx.description}</p>
+                      <p className="text-[10px] text-slate-500">{formatDateBr(tx.date)}</p>
+                    </div>
+                 </div>
+                 <span className={`text-xs font-bold ${tx.type === 'receita' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                    {tx.type === 'receita' ? '+' : '-'}{formatCurrency(tx.amount, data.settings.currency)}
+                 </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* 6. VARIAÇÃO DE CRIPTO */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
+         <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Variações Cripto</h3>
+            <button onClick={() => onNavigateTab('cripto')} className="text-xs font-bold text-indigo-600 hover:text-pink-600">
+              Ir para Cripto <ArrowUpRight className="w-3.5 h-3.5 inline" />
+            </button>
+         </div>
+         <div className="space-y-3">
+           {sortedCryptos.length === 0 ? (
+              <div className="text-center py-4 text-xs font-medium text-slate-400">Nenhum ativo cadastrado.</div>
+           ) : (
+             sortedCryptos.map(crypto => (
+               <div key={crypto.id} className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 last:border-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[10px] text-slate-700 dark:text-slate-300">
+                        {crypto.symbol}
+                     </div>
+                     <div>
+                       <p className="text-xs font-bold text-slate-900 dark:text-white">{crypto.name}</p>
+                       <p className="text-[10px] text-slate-500">Saldo: {crypto.amount} {crypto.symbol}</p>
+                     </div>
+                  </div>
+                  <div className="text-right">
+                     <p className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(crypto.amount * getLivePriceBrl(crypto), data.settings.currency)}</p>
+                     <p className={`text-[10px] font-bold ${crypto.change24h >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {crypto.change24h >= 0 ? '+' : ''}{crypto.change24h}%
+                     </p>
+                  </div>
+               </div>
+             ))
+           )}
+         </div>
+      </div>
+
+      {selectedDay && (
+        <DayDetailsModal
+          date={selectedDay.date}
+          events={selectedDay.events}
+          currency={data.settings.currency}
+          onClose={() => setSelectedDay(null)}
+        />
+      )}
     </div>
   );
 };
