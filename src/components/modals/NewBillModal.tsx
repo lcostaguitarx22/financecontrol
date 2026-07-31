@@ -79,17 +79,13 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     const isUrgent = dueDate === today || dueDate === tomorrow || dueDate < today;
 
-    // Formata a data para exibir melhor
-    const [year, month, day] = dueDate.split('-');
-    const formattedDateForList = `${day}/${month}/${year}`;
-    
     // Status agora sempre inicia pendente (mesmo saldo/pix), para ser abatido pelo Auto-Payer
     const finalStatus = editMode ? initialBill.status : 'pendente';
 
     const billData = {
       title,
       amount: parsedAmount,
-      dueDate: formattedDateForList, 
+      dueDate: dueDate, 
       status: finalStatus as 'pendente' | 'pago',
       category,
       paymentMethod,

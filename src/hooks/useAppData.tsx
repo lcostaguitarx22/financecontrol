@@ -70,12 +70,26 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
               settings: { ...initialAppData.settings, ...(dbData.settings || {}) }
             } as AppData;
             
+            // --- INÍCIO MIGRAÇÃO DE DATAS (DD/MM/YYYY para YYYY-MM-DD) ---
+            let needsUpdate = false;
+            let updatedBills = [...loadedData.bills];
+            
+            updatedBills = updatedBills.map(bill => {
+              if (bill.dueDate && bill.dueDate.includes('/')) {
+                const parts = bill.dueDate.split('/');
+                if (parts.length === 3) {
+                  const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                  needsUpdate = true;
+                  return { ...bill, dueDate: `${y}-${parts[1]}-${parts[0]}` };
+                }
+              }
+              return bill;
+            });
+            // --- FIM MIGRAÇÃO DE DATAS ---
+
             // --- INÍCIO AUTO GENERATE FIXED BILLS ---
             const todayStr = new Date().toISOString().split('T')[0];
             const currentYyyyMm = todayStr.substring(0, 7);
-            
-            let needsUpdate = false;
-            let updatedBills = [...loadedData.bills];
             
             (loadedData.fixedBills || []).forEach(fixedBill => {
               let dueDay = "01";
@@ -84,8 +98,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 if (parts.length === 3) dueDay = parts[2];
               }
 
-              const [yyyy, mm] = currentYyyyMm.split('-');
-              const expectedDueDateBr = `${dueDay}/${mm}/${yyyy}`;
+              const expectedDueDate = `${currentYyyyMm}-${dueDay}`;
               
               const billId = `b-auto-${fixedBill.id}-${currentYyyyMm}`;
               const isDeleted = (loadedData.deletedGeneratedBills || []).includes(billId);
@@ -98,7 +111,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   id: billId,
                   title: fixedBill.name,
                   amount: fixedBill.amount,
-                  dueDate: expectedDueDateBr,
+                  dueDate: expectedDueDate,
                   status: 'pendente' as const,
                   category: fixedBill.category,
                   fixedBillId: fixedBill.id,

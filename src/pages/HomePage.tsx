@@ -160,19 +160,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     setSelectedDay({ date: dateStr, events });
   };
 
-  // Helper to convert DD/MM/YYYY to YYYY-MM-DD for correct comparison
-  const parseDateToComparable = (dateStr: string) => {
-    if (!dateStr) return '';
-    const parts = dateStr.split('/');
-    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    return dateStr;
-  };
-
   // ==========================================
   // 3. PRÓXIMAS CONTAS (Até 8)
   // ==========================================
   const upcomingBills = pendingBills
-    .sort((a, b) => parseDateToComparable(a.dueDate).localeCompare(parseDateToComparable(b.dueDate)))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     .slice(0, 8);
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -180,8 +172,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
   const twoDaysStr = twoDaysFromNow.toISOString().split('T')[0];
   
-  const urgentBills = upcomingBills.filter(b => parseDateToComparable(b.dueDate) <= twoDaysStr);
-  const nextUrgentBill = urgentBills.length > 0 ? urgentBills[0] : null;
+  const urgentBills = upcomingBills.filter(b => b.dueDate <= twoDaysStr);
+  const topUrgentBills = urgentBills.slice(0, 3);
 
   // ==========================================
   // 4. ORÇAMENTO PREVISTO (MÊS SEGUINTE)
@@ -251,23 +243,30 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         </div>
       </div>
 
-      {nextUrgentBill && (
+      {topUrgentBills.length > 0 && (
         <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/50 dark:shadow-none border border-indigo-800/50 relative overflow-hidden">
-          <div className="flex items-start gap-2 mb-2">
+          <div className="flex items-start gap-2 mb-3">
             <Sparkles className="w-4 h-4 text-pink-400" />
             <h4 className="font-bold text-xs tracking-wider uppercase text-pink-300">
-              Próxima Conta
+              {topUrgentBills.length > 1 ? 'Próximas Contas' : 'Próxima Conta'}
             </h4>
           </div>
-          <p className="text-xs text-indigo-200 leading-relaxed mb-4 font-medium">
-            Lembre-se do pagamento de <strong className="text-white">{nextUrgentBill.title}</strong> programado para {formatDateBr(nextUrgentBill.dueDate)}.
-          </p>
-          <button
-            onClick={() => toggleBillPaid(nextUrgentBill.id)}
-            className="w-full py-2.5 bg-pink-500 hover:bg-pink-400 text-white font-bold rounded-2xl text-xs transition-all shadow-md shadow-pink-500/30"
-          >
-            Marcar como Pago
-          </button>
+          <div className="space-y-3">
+            {topUrgentBills.map(bill => (
+              <div key={bill.id} className="flex items-center justify-between gap-3 bg-indigo-900/30 p-3 rounded-2xl border border-indigo-500/20">
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-white mb-0.5">{bill.title}</p>
+                  <p className="text-[10px] font-medium text-indigo-300">Vence em: {formatDateBr(bill.dueDate)}</p>
+                </div>
+                <button
+                  onClick={() => toggleBillPaid(bill.id)}
+                  className="px-4 py-2 bg-pink-500 hover:bg-pink-400 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-pink-500/30 whitespace-nowrap"
+                >
+                  Pagar
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
