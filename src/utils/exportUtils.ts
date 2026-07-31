@@ -156,7 +156,7 @@ export function exportToPDF(data: ReportItem[], filename: string) {
     
     const saldo = receitas - despesas;
     doc.setTextColor(saldo >= 0 ? 16 : 244, saldo >= 0 ? 185 : 63, saldo >= 0 ? 129 : 94);
-    doc.setFontStyle('bold');
+    doc.setFont('helvetica', 'bold');
     doc.text(`Balanço Final: R$ ${saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, finalY + 32);
 
     doc.save(`${filename}.pdf`);
