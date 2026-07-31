@@ -16,13 +16,15 @@ import {
   Activity,
   Wallet,
   ArrowDownToLine,
-  ArrowUpFromLine
+  ArrowUpFromLine,
+  Sparkles
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency, formatDateBr } from '../utils/formatters';
 import { TabType } from '../types';
 import { DayDetailsModal, CalendarEvent } from '../components/modals/DayDetailsModal';
+import { toggleBillPaid } from '../services/storage';
 
 interface HomePageProps {
   onNavigateTab: (tab: TabType) => void;
@@ -91,7 +93,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
   const paymentDay = Math.min(30, daysInMonth);
   const currentYyyyMm = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-  
+
   const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const monthName = monthsNames[currentMonth];
 
@@ -165,6 +167,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     .slice(0, 8);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const twoDaysFromNow = new Date();
+  twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+  const twoDaysStr = twoDaysFromNow.toISOString().split('T')[0];
+  
+  const urgentBills = upcomingBills.filter(b => b.dueDate <= twoDaysStr);
+  const nextUrgentBill = urgentBills.length > 0 ? urgentBills[0] : null;
+
   // ==========================================
   // 4. ORÇAMENTO PREVISTO (MÊS SEGUINTE)
   // ==========================================
@@ -173,23 +183,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   const nextMonthYear = nextMonthDate.getFullYear();
   const nextMonthIndex = nextMonthDate.getMonth();
   const nextMonthYyyyMm = `${nextMonthYear}-${String(nextMonthIndex + 1).padStart(2, '0')}`;
-  
+
   const expectedSalaryNextMonth = data.monthlySalaries?.[nextMonthYyyyMm] ?? data.salary ?? 0;
   const expectedExtrasNextMonth = data.monthlyExtras?.[nextMonthYyyyMm] ?? 0;
   const totalRendaProx = expectedSalaryNextMonth + expectedExtrasNextMonth;
 
   const projectedFixedBills = (data.fixedBills || []).reduce((acc, b) => {
-      const bRecurrence = b.recurrence || 'mensal';
-      const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
-      let shouldShow = true;
-      if (bMonthKey) {
-        if (bRecurrence === 'unico') {
-          shouldShow = bMonthKey === nextMonthYyyyMm;
-        } else {
-          shouldShow = bMonthKey <= nextMonthYyyyMm;
-        }
+    const bRecurrence = b.recurrence || 'mensal';
+    const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+    let shouldShow = true;
+    if (bMonthKey) {
+      if (bRecurrence === 'unico') {
+        shouldShow = bMonthKey === nextMonthYyyyMm;
+      } else {
+        shouldShow = bMonthKey <= nextMonthYyyyMm;
       }
-      return acc + (shouldShow ? b.amount : 0);
+    }
+    return acc + (shouldShow ? b.amount : 0);
   }, 0);
 
   const budgetRestanteProx = totalRendaProx - projectedFixedBills;
@@ -209,7 +219,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   return (
     <div className="space-y-6 pb-24 animate-in fade-in duration-300">
-      
+
       {/* Header Info */}
       <div className="flex items-center justify-between pt-2">
         <div>
@@ -233,52 +243,25 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         </div>
       </div>
 
-      {/* 1. VISÃO CALENDÁRIO */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-3xl border border-indigo-100/80 dark:border-slate-800 shadow-sm text-xs space-y-2">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-             <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-             <p className="font-bold text-slate-900 dark:text-white">Calendário Financeiro</p>
+      {nextUrgentBill && (
+        <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/50 dark:shadow-none border border-indigo-800/50 relative overflow-hidden">
+          <div className="flex items-start gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-pink-400" />
+            <h4 className="font-bold text-xs tracking-wider uppercase text-pink-300">
+              Próxima Conta
+            </h4>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handlePrevMonth} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 font-bold">&lt;</button>
-            <span className="font-semibold text-slate-700 dark:text-slate-300 min-w-[80px] text-center">{monthName} {currentYear}</span>
-            <button onClick={handleNextMonth} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 font-bold">&gt;</button>
-          </div>
+          <p className="text-xs text-indigo-200 leading-relaxed mb-4 font-medium">
+            Lembre-se do pagamento de <strong className="text-white">{nextUrgentBill.title}</strong> programado para {formatDateBr(nextUrgentBill.dueDate)}.
+          </p>
+          <button
+            onClick={() => toggleBillPaid(nextUrgentBill.id)}
+            className="w-full py-2.5 bg-pink-500 hover:bg-pink-400 text-white font-bold rounded-2xl text-xs transition-all shadow-md shadow-pink-500/30"
+          >
+            Marcar como Pago
+          </button>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center font-semibold text-slate-400 text-[10px]">
-          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
-        </div>
-        <div className="grid grid-cols-7 gap-1 text-center font-medium">
-          {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-            <div key={`empty-${i}`} className="py-1.5" />
-          ))}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1;
-            const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
-            const events = getEventsForDay(day);
-            const hasDebito = events.some(e => e.type === 'debito');
-            const hasRenda = events.some(e => e.type === 'renda');
-
-            return (
-              <div
-                key={day}
-                onClick={() => handleDayClick(day)}
-                className={`py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${isToday
-                    ? 'bg-indigo-600 text-white font-bold shadow-md'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}
-              >
-                <span>{day}</span>
-                <div className="flex items-center gap-0.5 mt-0.5 h-1">
-                  {hasRenda && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-emerald-500'}`} />}
-                  {hasDebito && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-300' : 'bg-rose-500'}`} />}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* 2. SALDO GERAL & FLUXO DE CAIXA */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -334,20 +317,20 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             </ResponsiveContainer>
           </div>
           <div className="space-y-3 flex-1">
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
-                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Receitas</span>
-                </div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(receitasMes, data.settings.currency)}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Receitas</span>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-pink-500" />
-                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Despesas</span>
-                </div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(despesasMes, data.settings.currency)}</span>
+              <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(receitasMes, data.settings.currency)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-pink-500" />
+                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Despesas</span>
               </div>
+              <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(despesasMes, data.settings.currency)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -364,6 +347,56 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
           </div>
         </div>
       )}
+
+
+
+      {/* 1. VISÃO CALENDÁRIO */}
+      <div className="p-4 bg-white dark:bg-slate-900 rounded-3xl border border-indigo-100/80 dark:border-slate-800 shadow-sm text-xs space-y-2">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <p className="font-bold text-slate-900 dark:text-white">Calendário Financeiro</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handlePrevMonth} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 font-bold">&lt;</button>
+            <span className="font-semibold text-slate-700 dark:text-slate-300 min-w-[80px] text-center">{monthName} {currentYear}</span>
+            <button onClick={handleNextMonth} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 font-bold">&gt;</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center font-semibold text-slate-400 text-[10px]">
+          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center font-medium">
+          {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+            <div key={`empty-${i}`} className="py-1.5" />
+          ))}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+            const events = getEventsForDay(day);
+            const hasDebito = events.some(e => e.type === 'debito');
+            const hasRenda = events.some(e => e.type === 'renda');
+
+            return (
+              <div
+                key={day}
+                onClick={() => handleDayClick(day)}
+                className={`py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${isToday
+                  ? 'bg-indigo-600 text-white font-bold shadow-md'
+                  : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+              >
+                <span>{day}</span>
+                <div className="flex items-center gap-0.5 mt-0.5 h-1">
+                  {hasRenda && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-emerald-500'}`} />}
+                  {hasDebito && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-300' : 'bg-rose-500'}`} />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
 
       {/* 3. PRÓXIMAS CONTAS (Até 8) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
@@ -397,31 +430,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
           )}
         </div>
       </div>
-
-      {/* 4. ORÇAMENTO PREVISTO (Próximo Mês) */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-5 shadow-sm text-white">
-        <div className="flex items-center gap-2 mb-4">
-          <Wallet className="w-4 h-4 text-emerald-400" />
-          <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-           <div>
-             <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Renda Esperada</p>
-             <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
-           </div>
-           <div>
-             <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
-             <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
-           </div>
-           <div className="col-span-2 md:col-span-1 border-t border-slate-700 md:border-none pt-3 md:pt-0">
-             <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
-             <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {formatCurrency(budgetRestanteProx, data.settings.currency)}
-             </p>
-           </div>
-        </div>
-      </div>
-
       {/* 5. TRANSAÇÕES RECENTES (Até 8) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
@@ -435,61 +443,87 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         </div>
         <div className="space-y-2">
           {recentTransactions.length === 0 ? (
-             <div className="text-center py-4 text-xs font-medium text-slate-400">Nenhuma transação recente!</div>
+            <div className="text-center py-4 text-xs font-medium text-slate-400">Nenhuma transação recente!</div>
           ) : (
             recentTransactions.map(tx => (
               <div key={tx.id} className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                 <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${tx.type === 'receita' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600' : 'bg-pink-100 dark:bg-pink-950/50 text-pink-600'}`}>
-                       {tx.type === 'receita' ? <ArrowUpFromLine className="w-3.5 h-3.5" /> : <ArrowDownToLine className="w-3.5 h-3.5" />}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{tx.description}</p>
-                      <p className="text-[10px] text-slate-500">{formatDateBr(tx.date)}</p>
-                    </div>
-                 </div>
-                 <span className={`text-xs font-bold ${tx.type === 'receita' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
-                    {tx.type === 'receita' ? '+' : '-'}{formatCurrency(tx.amount, data.settings.currency)}
-                 </span>
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${tx.type === 'receita' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600' : 'bg-pink-100 dark:bg-pink-950/50 text-pink-600'}`}>
+                    {tx.type === 'receita' ? <ArrowUpFromLine className="w-3.5 h-3.5" /> : <ArrowDownToLine className="w-3.5 h-3.5" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{tx.description}</p>
+                    <p className="text-[10px] text-slate-500">{formatDateBr(tx.date)}</p>
+                  </div>
+                </div>
+                <span className={`text-xs font-bold ${tx.type === 'receita' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                  {tx.type === 'receita' ? '+' : '-'}{formatCurrency(tx.amount, data.settings.currency)}
+                </span>
               </div>
             ))
           )}
         </div>
       </div>
 
+      {/* 4. ORÇAMENTO PREVISTO (Próximo Mês) */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-5 shadow-sm text-white">
+        <div className="flex items-center gap-2 mb-4">
+          <Wallet className="w-4 h-4 text-emerald-400" />
+          <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Renda Esperada</p>
+            <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
+            <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
+          </div>
+          <div className="col-span-2 md:col-span-1 border-t border-slate-700 md:border-none pt-3 md:pt-0">
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+            <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {formatCurrency(budgetRestanteProx, data.settings.currency)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+
+
       {/* 6. VARIAÇÃO DE CRIPTO */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
-         <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Variações Cripto</h3>
-            <button onClick={() => onNavigateTab('cripto')} className="text-xs font-bold text-indigo-600 hover:text-pink-600">
-              Ir para Cripto <ArrowUpRight className="w-3.5 h-3.5 inline" />
-            </button>
-         </div>
-         <div className="space-y-3">
-           {sortedCryptos.length === 0 ? (
-              <div className="text-center py-4 text-xs font-medium text-slate-400">Nenhum ativo cadastrado.</div>
-           ) : (
-             sortedCryptos.map(crypto => (
-               <div key={crypto.id} className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 last:border-0 last:pb-0">
-                  <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[10px] text-slate-700 dark:text-slate-300">
-                        {crypto.symbol}
-                     </div>
-                     <div>
-                       <p className="text-xs font-bold text-slate-900 dark:text-white">{crypto.name}</p>
-                       <p className="text-[10px] text-slate-500">Saldo: {crypto.amount} {crypto.symbol}</p>
-                     </div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-slate-900 dark:text-white text-sm">Variações Cripto</h3>
+          <button onClick={() => onNavigateTab('cripto')} className="text-xs font-bold text-indigo-600 hover:text-pink-600">
+            Ir para Cripto <ArrowUpRight className="w-3.5 h-3.5 inline" />
+          </button>
+        </div>
+        <div className="space-y-3">
+          {sortedCryptos.length === 0 ? (
+            <div className="text-center py-4 text-xs font-medium text-slate-400">Nenhum ativo cadastrado.</div>
+          ) : (
+            sortedCryptos.map(crypto => (
+              <div key={crypto.id} className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[10px] text-slate-700 dark:text-slate-300">
+                    {crypto.symbol}
                   </div>
-                  <div className="text-right">
-                     <p className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(crypto.amount * getLivePriceBrl(crypto), data.settings.currency)}</p>
-                     <p className={`text-[10px] font-bold ${crypto.change24h >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {crypto.change24h >= 0 ? '+' : ''}{crypto.change24h}%
-                     </p>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">{crypto.name}</p>
+                    <p className="text-[10px] text-slate-500">Saldo: {crypto.amount} {crypto.symbol}</p>
                   </div>
-               </div>
-             ))
-           )}
-         </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(crypto.amount * getLivePriceBrl(crypto), data.settings.currency)}</p>
+                  <p className={`text-[10px] font-bold ${crypto.change24h >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {crypto.change24h >= 0 ? '+' : ''}{crypto.change24h}%
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {selectedDay && (
