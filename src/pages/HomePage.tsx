@@ -244,7 +244,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
       </div>
 
       {topUrgentBills.length > 0 && (
-        <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/50 dark:shadow-none border border-indigo-800/50 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-1xl p-5 shadow-xl shadow-indigo-200/50 dark:shadow-none border border-indigo-800/50 relative overflow-hidden">
           <div className="flex items-start gap-2 mb-3">
             <Sparkles className="w-4 h-4 text-pink-400" />
             <h4 className="font-bold text-xs tracking-wider uppercase text-pink-300">
@@ -279,7 +279,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         {/* Card: Saldo Geral Consolidado */}
         <div
           onClick={onOpenRendimento}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white p-6 shadow-xl shadow-indigo-200/60 dark:shadow-none border border-indigo-500/30 cursor-pointer group transition-transform active:scale-[0.99]"
+          className="relative overflow-hidden rounded-1xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white p-6 shadow-xl shadow-indigo-200/60 dark:shadow-none border border-indigo-500/30 cursor-pointer group transition-transform active:scale-[0.99]"
         >
           <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
           <div className="flex justify-between items-start mb-1">
@@ -306,7 +306,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         </div>
 
         {/* 4. ORÇAMENTO PREVISTO (Próximo Mês) */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-5 shadow-sm text-white">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-1xl p-5 shadow-sm text-white">
           <div className="flex items-center gap-2 mb-4">
             <Wallet className="w-4 h-4 text-emerald-400" />
             <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
@@ -324,7 +324,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
               <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
             </div>
-            <div className="col-span-2 md:col-span-1 border-t border-slate-700 md:border-none pt-3 md:pt-0">
+            <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
               <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {formatCurrency(budgetRestanteProx, data.settings.currency)}
@@ -332,10 +332,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             </div>
           </div>
         </div>
-
-
         {/* Card: Fluxo de Caixa (Mês) */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 rounded-1xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex items-center gap-4">
           <div className="w-20 h-20 shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -391,7 +389,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
 
       {/* 1. VISÃO CALENDÁRIO */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-3xl border border-indigo-100/80 dark:border-slate-800 shadow-sm text-xs space-y-2">
+      <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-indigo-100/80 dark:border-slate-800 shadow-sm text-xs space-y-2">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -439,7 +437,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
 
       {/* 3. PRÓXIMAS CONTAS (Até 8) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-pink-600 dark:text-pink-400" />
@@ -471,7 +469,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         </div>
       </div>
       {/* 5. TRANSAÇÕES RECENTES (Até 8) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -506,7 +504,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
       </div>
 
       {/* 6. VARIAÇÃO DE CRIPTO */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-slate-900 dark:text-white text-sm">Variações Cripto</h3>
           <button onClick={() => onNavigateTab('cripto')} className="text-xs font-bold text-indigo-600 hover:text-pink-600">
