@@ -256,7 +256,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               <div key={bill.id} className="flex items-center justify-between gap-3 bg-indigo-900/30 p-3 rounded-2xl border border-indigo-500/20">
                 <div className="flex-1">
                   <p className="text-xs font-bold text-white mb-0.5">{bill.title}</p>
-                  <p className="text-[10px] font-medium text-indigo-300">Vence em: {formatDateBr(bill.dueDate)}</p>
+                  {bill.dueDate === todayStr ? (
+                    <span className="text-[10px] font-bold text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-md">Vence Hoje</span>
+                  ) : (
+                    <p className="text-[10px] font-medium text-indigo-300">Vence em: {formatDateBr(bill.dueDate)}</p>
+                  )}
                 </div>
                 <button
                   onClick={() => toggleBillPaid(bill.id)}
