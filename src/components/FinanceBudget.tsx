@@ -43,6 +43,28 @@ export const FinanceBudget: React.FC = () => {
   });
 
   // Atualizar tempSalary quando mudar de mês
+  const getStatusBadge = (status: string) => {
+    if (status === 'pago') {
+      return (
+        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/80 dark:text-emerald-300 px-1.5 py-0.5 rounded-md">
+          PAGO
+        </span>
+      );
+    }
+    if (status === 'atrasado') {
+      return (
+        <span className="text-[9px] font-bold text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300 px-1.5 py-0.5 rounded-md">
+          ATRASADO
+        </span>
+      );
+    }
+    return (
+      <span className="text-[9px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/80 dark:text-amber-300 px-1.5 py-0.5 rounded-md">
+        PENDENTE
+      </span>
+    );
+  };
+
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value; // YYYY-MM
     setSelectedMonth(val);
@@ -521,6 +543,8 @@ export const FinanceBudget: React.FC = () => {
                 }
               }
 
+              const generatedBill = data.bills.find(b => b.fixedBillId === bill.id && b.dueDate.startsWith(selectedMonth));
+
               return (
                 <div
                   key={bill.id}
@@ -528,7 +552,10 @@ export const FinanceBudget: React.FC = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{bill.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{bill.name}</p>
+                        {generatedBill && getStatusBadge(generatedBill.status)}
+                      </div>
                       <p className="text-[11px] text-slate-500 font-medium mt-0.5">{bill.category}</p>
                     </div>
                     <span className="text-sm font-extrabold text-pink-600 dark:text-pink-400 whitespace-nowrap">
