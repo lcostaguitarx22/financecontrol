@@ -160,11 +160,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     setSelectedDay({ date: dateStr, events });
   };
 
+  // Helper to convert DD/MM/YYYY to YYYY-MM-DD for correct comparison
+  const parseDateToComparable = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return dateStr;
+  };
+
   // ==========================================
   // 3. PRÓXIMAS CONTAS (Até 8)
   // ==========================================
   const upcomingBills = pendingBills
-    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .sort((a, b) => parseDateToComparable(a.dueDate).localeCompare(parseDateToComparable(b.dueDate)))
     .slice(0, 8);
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -172,7 +180,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
   const twoDaysStr = twoDaysFromNow.toISOString().split('T')[0];
   
-  const urgentBills = upcomingBills.filter(b => b.dueDate <= twoDaysStr);
+  const urgentBills = upcomingBills.filter(b => parseDateToComparable(b.dueDate) <= twoDaysStr);
   const nextUrgentBill = urgentBills.length > 0 ? urgentBills[0] : null;
 
   // ==========================================
