@@ -176,6 +176,41 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   const topUrgentBills = urgentBills.slice(0, 3);
 
   // ==========================================
+  // CONTAS DO MÊS SELECIONADO NO CALENDÁRIO
+  // ==========================================
+  const selectedMonthBillsList: Array<{ id: string; title: string; amount: number; dueDate: string; status: string; isFixed: boolean }> = [];
+  
+  data.bills.forEach(b => {
+    if (b.dueDate.startsWith(currentYyyyMm)) {
+      selectedMonthBillsList.push({ id: b.id, title: b.title, amount: b.amount, dueDate: b.dueDate, status: b.status, isFixed: false });
+    }
+  });
+
+  (data.fixedBills || []).forEach(b => {
+    const bRecurrence = b.recurrence || 'mensal';
+    const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+
+    let shouldShow = true;
+    if (bMonthKey) {
+      if (bRecurrence === 'unico') {
+        shouldShow = bMonthKey === currentYyyyMm;
+      } else {
+        shouldShow = bMonthKey <= currentYyyyMm;
+      }
+    }
+
+    if (shouldShow && b.dueDate) {
+      const alreadyGenerated = data.bills.some(realBill => realBill.fixedBillId === b.id && realBill.dueDate.startsWith(currentYyyyMm));
+      if (!alreadyGenerated) {
+        const fakeDueDate = `${currentYyyyMm}-${b.dueDate.split('-')[2]}`;
+        selectedMonthBillsList.push({ id: b.id, title: b.title, amount: b.amount, dueDate: fakeDueDate, status: 'pendente', isFixed: true });
+      }
+    }
+  });
+
+  selectedMonthBillsList.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
+  // ==========================================
   // 4. ORÇAMENTO PREVISTO (MÊS SEGUINTE)
   // ==========================================
   const nextMonthDate = new Date();
@@ -435,6 +470,39 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         </div>
       </div>
 
+      {/* CONTAS DO MÊS SELECIONADO */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Contas Previstas - {monthName}</h3>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {selectedMonthBillsList.length === 0 ? (
+            <div className="text-center py-4 text-xs font-medium text-slate-400">Nenhuma conta prevista para este mês!</div>
+          ) : (
+            selectedMonthBillsList.map((bill, index) => (
+              <div key={bill.id + '-' + index} onClick={() => onNavigateTab('contas')} className="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/40 dark:bg-slate-800/60 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-indigo-100 dark:hover:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl shadow-xs border ${bill.status === 'pago' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-900 text-pink-500 border-slate-100 dark:border-slate-800'}`}>
+                    <CreditCard className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">{bill.title}</p>
+                    <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                      {formatDateBr(bill.dueDate)}
+                      {bill.status === 'pago' && <span className="ml-2 text-emerald-500 font-bold">Pago</span>}
+                      {bill.isFixed && <span className="ml-2 text-indigo-400 font-bold">Fixa</span>}
+                    </p>
+                  </div>
+                </div>
+                <span className={`text-xs font-bold ${bill.status === 'pago' ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>{formatCurrency(bill.amount, data.settings.currency)}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
       {/* 3. PRÓXIMAS CONTAS (Até 8) */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
