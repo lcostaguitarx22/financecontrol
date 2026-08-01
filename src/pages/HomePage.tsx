@@ -131,7 +131,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
       if (shouldShow && b.dueDate && b.dueDate.split('-')[2] === dayStr) {
         const alreadyGenerated = data.bills.some(realBill => realBill.fixedBillId === b.id && realBill.dueDate.startsWith(currentYyyyMm));
         if (!alreadyGenerated) {
-          events.push({ id: b.id, title: b.title, amount: b.amount, type: 'debito', source: 'conta_fixa' });
+          events.push({ id: b.id, title: b.name, amount: b.amount, type: 'debito', source: 'conta_fixa' });
         }
       }
     });
@@ -203,7 +203,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
       const alreadyGenerated = data.bills.some(realBill => realBill.fixedBillId === b.id && realBill.dueDate.startsWith(currentYyyyMm));
       if (!alreadyGenerated) {
         const fakeDueDate = `${currentYyyyMm}-${b.dueDate.split('-')[2]}`;
-        selectedMonthBillsList.push({ id: b.id, title: b.title, amount: b.amount, dueDate: fakeDueDate, status: 'pendente', isFixed: true });
+        selectedMonthBillsList.push({ id: b.id, title: b.name, amount: b.amount, dueDate: fakeDueDate, status: 'pendente', isFixed: true });
       }
     }
   });

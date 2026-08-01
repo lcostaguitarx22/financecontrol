@@ -85,7 +85,7 @@ export const BillsPage: React.FC = () => {
       if (shouldShow && b.dueDate && b.dueDate.split('-')[2] === dayStr) {
         const alreadyGenerated = data.bills.some(realBill => realBill.fixedBillId === b.id && realBill.dueDate.startsWith(currentYyyyMm));
         if (!alreadyGenerated) {
-          events.push({ id: b.id, title: b.title, amount: b.amount, type: 'debito', source: 'conta_fixa' });
+          events.push({ id: b.id, title: b.name, amount: b.amount, type: 'debito', source: 'conta_fixa' });
         }
       }
     });
