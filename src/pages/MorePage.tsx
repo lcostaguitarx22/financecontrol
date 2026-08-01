@@ -36,7 +36,7 @@ import {
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { useAppData } from '../hooks/useAppData';
-import { updateSettings, resetToDemoData } from '../services/storage';
+import { updateSettings } from '../services/storage';
 import { Currency, ThemeMode, AppData } from '../types';
 import { formatCurrency } from '../utils/formatters';
 
@@ -351,27 +351,7 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
         </button>
       </div>
 
-      {/* Card 6: Zona de Perigo */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-rose-100 dark:border-rose-900/30 space-y-4">
-        <div className="flex items-center gap-2">
-          <RotateCcw className="w-4 h-4 text-rose-500" />
-          <h3 className="font-bold text-slate-900 dark:text-white text-sm">Zona de Perigo</h3>
-        </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-          Esta ação apagará permanentemente todas as transações e dados salvos no Firebase para esta conta.
-        </p>
-        <button
-          onClick={async () => {
-            if (window.confirm('Tem certeza absoluta que deseja ZERAR todo o banco de dados? Esta ação NÃO pode ser desfeita.')) {
-              await resetToDemoData();
-              alert('Banco de dados zerado com sucesso!');
-            }
-          }}
-          className="w-full py-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/40 text-rose-600 font-extrabold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all border border-rose-200 dark:border-rose-800"
-        >
-          <RotateCcw className="w-4 h-4" /> Zerar Banco de Dados
-        </button>
-      </div>
+
 
       {/* Card 7: Logout */}
       <button
