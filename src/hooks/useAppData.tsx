@@ -90,8 +90,52 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             // --- INÍCIO AUTO GENERATE FIXED BILLS ---
             const todayStr = new Date().toISOString().split('T')[0];
             const currentYyyyMm = todayStr.substring(0, 7);
-            
+
+            // 1. Limpar contas geradas erroneamente no passado (antes do mês de início)
+            const wronglyGeneratedIds: string[] = [];
             (loadedData.fixedBills || []).forEach(fixedBill => {
+              const bRecurrence = fixedBill.recurrence || 'mensal';
+              const bMonthKey = fixedBill.dueDate ? fixedBill.dueDate.substring(0, 7) : '';
+
+              updatedBills.forEach(bill => {
+                if (bill.fixedBillId === fixedBill.id && bill.id.startsWith('b-auto-')) {
+                  const billMonth = bill.dueDate.substring(0, 7);
+                  let shouldExist = true;
+                  if (bMonthKey) {
+                    if (bRecurrence === 'unico') {
+                      shouldExist = bMonthKey === billMonth;
+                    } else {
+                      shouldExist = bMonthKey <= billMonth;
+                    }
+                  }
+                  if (!shouldExist) {
+                    wronglyGeneratedIds.push(bill.id);
+                  }
+                }
+              });
+            });
+
+            if (wronglyGeneratedIds.length > 0) {
+              updatedBills = updatedBills.filter(b => !wronglyGeneratedIds.includes(b.id));
+              needsUpdate = true;
+            }
+            
+            // 2. Gerar contas para o mês atual, se aplicável
+            (loadedData.fixedBills || []).forEach(fixedBill => {
+              const bRecurrence = fixedBill.recurrence || 'mensal';
+              const bMonthKey = fixedBill.dueDate ? fixedBill.dueDate.substring(0, 7) : '';
+
+              let shouldGenerate = true;
+              if (bMonthKey) {
+                if (bRecurrence === 'unico') {
+                  shouldGenerate = bMonthKey === currentYyyyMm;
+                } else {
+                  shouldGenerate = bMonthKey <= currentYyyyMm;
+                }
+              }
+
+              if (!shouldGenerate) return;
+
               let dueDay = "01";
               if (fixedBill.dueDate) {
                 const parts = fixedBill.dueDate.split('-');
