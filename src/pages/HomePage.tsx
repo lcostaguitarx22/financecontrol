@@ -211,8 +211,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   selectedMonthBillsList.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 
   // ==========================================
-  // 4. ORÇAMENTO PREVISTO (MÊS SEGUINTE)
+  // 4. ORÇAMENTO PREVISTO (MÊS ATUAL E SEGUINTE)
   // ==========================================
+  const realCurrentYear = today.getFullYear();
+  const realCurrentMonthIndex = today.getMonth();
+  const realCurrentYyyyMm = `${realCurrentYear}-${String(realCurrentMonthIndex + 1).padStart(2, '0')}`;
+
+  const expectedSalaryCurrentMonth = data.monthlySalaries?.[realCurrentYyyyMm] ?? data.salary ?? 0;
+  const expectedExtrasCurrentMonth = data.monthlyExtras?.[realCurrentYyyyMm] ?? 0;
+  const totalRendaAtual = expectedSalaryCurrentMonth + expectedExtrasCurrentMonth;
+
+  const projectedFixedBillsCurrent = (data.fixedBills || []).reduce((acc, b) => {
+    const bRecurrence = b.recurrence || 'mensal';
+    const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+    let shouldShow = true;
+    if (bMonthKey) {
+      if (bRecurrence === 'unico') {
+        shouldShow = bMonthKey === realCurrentYyyyMm;
+      } else {
+        shouldShow = bMonthKey <= realCurrentYyyyMm;
+      }
+    }
+    return acc + (shouldShow ? b.amount : 0);
+  }, 0);
+
+  const budgetRestanteAtual = totalRendaAtual - projectedFixedBillsCurrent;
+  const mesAtualNome = monthsNames[realCurrentMonthIndex];
+
   const nextMonthDate = new Date();
   nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
   const nextMonthYear = nextMonthDate.getFullYear();
@@ -340,33 +365,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
           </div>
         </div>
 
-        {/* 4. ORÇAMENTO PREVISTO (Próximo Mês) */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-5 shadow-sm text-white">
-          <div className="flex items-center gap-2 mb-4">
-            <Wallet className="w-4 h-4 text-emerald-400" />
-            <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário Previsto</p>
-              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário previsto + Saldo anterior</p>
-              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx + saldoCorrente, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
-              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
-              <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {formatCurrency(budgetRestanteProx, data.settings.currency)}
-              </p>
-            </div>
-          </div>
-        </div>
         {/* Card: Fluxo de Caixa (Mês) */}
         <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex items-center gap-4">
           <div className="w-20 h-20 shrink-0">
@@ -403,6 +401,62 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
                 <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Despesas</span>
               </div>
               <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(despesasMes, data.settings.currency)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4a. ORÇAMENTO PREVISTO (Mês Atual) */}
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-5 shadow-sm text-white">
+          <div className="flex items-center gap-2 mb-4">
+            <Wallet className="w-4 h-4 text-emerald-400" />
+            <h3 className="font-bold text-sm">Orçamento Previsto ({mesAtualNome})</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário Previsto</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaAtual, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário previsto + Saldo anterior</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaAtual + saldoCorrente, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBillsCurrent, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+              <p className={`text-sm font-bold mt-1 ${budgetRestanteAtual >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {formatCurrency(budgetRestanteAtual, data.settings.currency)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4b. ORÇAMENTO PREVISTO (Próximo Mês) */}
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-5 shadow-sm text-white">
+          <div className="flex items-center gap-2 mb-4">
+            <Wallet className="w-4 h-4 text-emerald-400" />
+            <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário Previsto</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário previsto + Saldo anterior</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx + saldoCorrente, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+              <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {formatCurrency(budgetRestanteProx, data.settings.currency)}
+              </p>
             </div>
           </div>
         </div>
