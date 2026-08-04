@@ -6,7 +6,7 @@
 import React from 'react';
 import { X, AlertTriangle, Bell, CheckCircle2, TrendingUp, Calendar } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, getDaysUntilDue } from '../utils/formatters';
 
 interface NotificationModalProps {
   onClose: () => void;
@@ -15,8 +15,23 @@ interface NotificationModalProps {
 export const NotificationModal: React.FC<NotificationModalProps> = ({ onClose }) => {
   const { data } = useAppData();
 
-  const overdueBills = data.bills.filter((b) => b.status === 'atrasado');
-  const pendingTodayBills = data.bills.filter((b) => b.status === 'pendente' && b.dueDate.includes('hoje'));
+  const overdueBills = data.bills.filter((b) => {
+    const days = getDaysUntilDue(b.dueDate);
+    return b.status === 'atrasado' || (b.status === 'pendente' && days !== null && days < 0);
+  });
+  
+  const pendingTodayBills = data.bills.filter((b) => {
+    if (b.status !== 'pendente') return false;
+    const days = getDaysUntilDue(b.dueDate);
+    return days === 0;
+  });
+
+  const dueSoonBills = data.bills.filter((b) => {
+    if (b.status !== 'pendente') return false;
+    const days = getDaysUntilDue(b.dueDate);
+    return days === 1 || days === 2;
+  });
+
   const highBudgets = data.budgets.filter((bg) => bg.usedPercentage >= 80);
 
   return (
@@ -73,6 +88,25 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ onClose })
               </div>
             </div>
           ))}
+
+          {dueSoonBills.map((bill) => {
+            const days = getDaysUntilDue(bill.dueDate);
+            const textDays = days === 1 ? 'amanhã' : 'em 2 dias';
+            return (
+              <div
+                key={bill.id}
+                className="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50 rounded-xl flex items-start gap-3"
+              >
+                <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                <div className="flex-1 text-sm">
+                  <p className="font-semibold text-indigo-900 dark:text-indigo-200">Vence {textDays}</p>
+                  <p className="text-indigo-700 dark:text-indigo-300 text-xs">
+                    {bill.title} no valor de {formatCurrency(bill.amount, data.settings.currency)}.
+                  </p>
+                </div>
+              </div>
+            );
+          })}
 
           {highBudgets.map((bg) => (
             <div

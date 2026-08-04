@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Bell, Sparkles, CheckCircle2, Wallet, Settings, LogOut } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
 import { NotificationModal } from './NotificationModal';
+import { getDaysUntilDue } from '../utils/formatters';
 import { auth } from '../services/firebase';
 import { signOut } from 'firebase/auth';
 
@@ -33,7 +34,14 @@ export const Header: React.FC<HeaderProps> = ({ title = 'Finance Control', showB
 
   // Calcular número de alertas pendentes
   const pendingBillsCount = data.bills.filter((b) => b.status !== 'pago').length;
-  const urgentCount = data.bills.filter((b) => b.isUrgent || b.status === 'atrasado').length;
+  const urgentCount = data.bills.filter((b) => {
+    if (b.isUrgent || b.status === 'atrasado') return true;
+    if (b.status === 'pendente') {
+      const days = getDaysUntilDue(b.dueDate);
+      if (days !== null && days <= 2) return true;
+    }
+    return false;
+  }).length;
 
   const userName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
   const userPhoto = user?.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';

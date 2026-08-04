@@ -52,3 +52,32 @@ export function formatDateBr(dateString: string): string {
   }
   return dateString;
 }
+
+export function getDaysUntilDue(dateString: string): number | null {
+  if (!dateString) return null;
+  if (dateString.toLowerCase().includes('hoje')) return 0;
+  if (dateString.toLowerCase().includes('amanhã') || dateString.toLowerCase().includes('amanha')) return 1;
+
+  try {
+    let year, month, day;
+    if (dateString.includes('-')) {
+      [year, month, day] = dateString.split('-');
+    } else if (dateString.includes('/')) {
+      [day, month, year] = dateString.split('/');
+    }
+
+    if (year && month && day) {
+      const fullYear = year.length === 2 ? `20${year}` : year;
+      const due = new Date(Number(fullYear), Number(month) - 1, Number(day));
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      due.setHours(0, 0, 0, 0);
+      const diffTime = due.getTime() - today.getTime();
+      return Math.round(diffTime / (1000 * 60 * 60 * 24));
+    }
+  } catch (e) {
+    // Retorna nulo se der erro
+  }
+  return null;
+}
+
