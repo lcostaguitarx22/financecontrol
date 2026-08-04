@@ -6,8 +6,8 @@ export interface ReportItem {
   date: string; // YYYY-MM-DD
   description: string;
   category: string;
-  type: 'Receita' | 'Despesa' | 'Conta Fixa' | 'Conta Variável';
-  status: 'Pago' | 'Pendente' | 'Atrasado' | 'Concluído';
+  type: string;
+  status: string;
   amount: number;
 }
 

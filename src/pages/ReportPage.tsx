@@ -31,15 +31,19 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
   const allData = useMemo(() => {
     const items: ReportItem[] = [];
 
+    const billTxIds = new Set(data.bills.map(b => b.transactionId).filter(Boolean));
+
     // Adicionar Transações
     data.transactions.forEach(t => {
+      if (billTxIds.has(t.id)) return;
+
       items.push({
         id: t.id,
         date: t.date,
         description: t.description,
         category: t.category || 'Outros',
         type: t.type === 'receita' ? 'Receita' : 'Despesa',
-        status: 'Concluído',
+        status: t.type === 'receita' ? 'Crédito' : 'Conta Paga',
         amount: t.amount
       });
     });
@@ -123,6 +127,8 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pago':
+      case 'Conta Paga':
+      case 'Crédito':
       case 'Concluído':
         return 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400';
       case 'Atrasado':
