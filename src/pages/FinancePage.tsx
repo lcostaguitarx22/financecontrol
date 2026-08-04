@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   TrendingUp,
   Trash2,
+  Pencil,
   FileSpreadsheet
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -332,6 +333,16 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
                       >
                         {tx.type === 'receita' ? '+' : '-'} {formatCurrency(tx.amount, data.settings.currency)}
                       </span>
+                      <button
+                        onClick={() => {
+                          (window as any).currentEditTransaction = tx;
+                          setShowNewTxModal(true);
+                        }}
+                        className="opacity-100 group-hover:opacity-100 p-1 text-slate-400 hover:text-indigo-600 transition-opacity"
+                        title="Editar"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => deleteTransaction(tx.id)}
                         className="opacity-100 group-hover:opacity-100 p-1 text-slate-400 hover:text-pink-600 transition-opacity"

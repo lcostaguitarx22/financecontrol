@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { X, Plus, Minus, Check } from 'lucide-react';
-import { addTransaction, getAppData, saveAppData } from '../../services/storage';
+import { addTransaction, updateTransaction, getAppData, saveAppData } from '../../services/storage';
 import { TransactionType } from '../../types';
 
 interface NewTransactionModalProps {
@@ -14,11 +14,18 @@ interface NewTransactionModalProps {
 }
 
 export const NewTransactionModal: React.FC<NewTransactionModalProps> = ({ onClose, onSuccess }) => {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [type, setType] = useState<TransactionType>('despesa');
-  const [category, setCategory] = useState('Alimentação');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const editModeTx = (window as any).currentEditTransaction;
+
+  const [description, setDescription] = useState(editModeTx?.description || '');
+  const [amount, setAmount] = useState(editModeTx?.amount?.toString() || '');
+  const [type, setType] = useState<TransactionType>(editModeTx?.type || 'despesa');
+  const [category, setCategory] = useState(editModeTx?.category || 'Alimentação');
+  const [date, setDate] = useState(editModeTx?.date || new Date().toISOString().split('T')[0]);
+
+  const handleClose = () => {
+    (window as any).currentEditTransaction = null;
+    onClose();
+  };
 
   const [categories, setCategories] = useState<string[]>([
     'Água', 'Assinaturas', 'Dízimo', 'Energia', 'Internet',
@@ -51,7 +58,7 @@ export const NewTransactionModal: React.FC<NewTransactionModalProps> = ({ onClos
     setNewCategoryName('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseFloat(amount.replace(',', '.'));
     if (!description || isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -59,26 +66,37 @@ export const NewTransactionModal: React.FC<NewTransactionModalProps> = ({ onClos
       return;
     }
 
-    addTransaction({
-      description,
-      amount: parsedAmount,
-      type,
-      category,
-      date,
-      iconName: type === 'receita' ? 'TrendingUp' : 'ShoppingBag',
-    });
+    if (editModeTx) {
+      await updateTransaction(editModeTx.id, {
+        description,
+        amount: parsedAmount,
+        type,
+        category,
+        date,
+        iconName: type === 'receita' ? 'TrendingUp' : 'ShoppingBag',
+      });
+    } else {
+      await addTransaction({
+        description,
+        amount: parsedAmount,
+        type,
+        category,
+        date,
+        iconName: type === 'receita' ? 'TrendingUp' : 'ShoppingBag',
+      });
+    }
 
     if (onSuccess) onSuccess();
-    onClose();
+    handleClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-indigo-100 dark:border-slate-800 overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-indigo-50 dark:border-slate-800">
-          <h3 className="font-bold text-slate-900 dark:text-white text-base">Nova Transação</h3>
+          <h3 className="font-bold text-slate-900 dark:text-white text-base">{editModeTx ? 'Editar Transação' : 'Nova Transação'}</h3>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             id="new-tx-close"
             className="p-1.5 rounded-full hover:bg-indigo-50 dark:hover:bg-slate-800 text-slate-500"
           >

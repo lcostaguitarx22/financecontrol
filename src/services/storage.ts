@@ -59,6 +59,17 @@ export async function deleteTransaction(id: string): Promise<void> {
   await saveAppData(data);
 }
 
+export async function updateTransaction(id: string, txUpdate: Partial<Omit<Transaction, 'id'>>): Promise<void> {
+  const data = await getAppData();
+  data.transactions = data.transactions.map(t => {
+    if (t.id === id) {
+      return { ...t, ...txUpdate };
+    }
+    return t;
+  });
+  await saveAppData(data);
+}
+
 export async function addBill(bill: Omit<Bill, 'id'>): Promise<Bill> {
   const data = await getAppData();
   const newBill: Bill = {
