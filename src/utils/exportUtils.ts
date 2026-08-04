@@ -32,8 +32,9 @@ export function exportToCSV(data: ReportItem[], filename: string) {
       }
     }
 
-    // Format amount to Brazilian locale with 2 decimal places
-    const formattedAmount = item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Format amount to Brazilian locale with 2 decimal places and sign
+    const sign = item.type === 'Receita' ? '+' : '-';
+    const formattedAmount = `${sign} ${item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     // Escape quotes in description and category
     const escapeField = (field: string) => {
@@ -100,7 +101,8 @@ export function exportToPDF(data: ReportItem[], filename: string) {
         }
       }
       
-      const formattedAmount = item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const sign = item.type === 'Receita' ? '+' : '-';
+      const formattedAmount = `${sign} ${item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       
       return [
         formattedDate,
@@ -130,6 +132,16 @@ export function exportToPDF(data: ReportItem[], filename: string) {
       styles: { fontSize: 9, cellPadding: 3 },
       columnStyles: {
         5: { halign: 'right', fontStyle: 'bold' }
+      },
+      didParseCell: (hookData: any) => {
+        if (hookData.section === 'body' && hookData.column.index === 5) {
+          const isReceita = data[hookData.row.index].type === 'Receita';
+          if (isReceita) {
+            hookData.cell.styles.textColor = [16, 185, 129]; // emerald-500
+          } else {
+            hookData.cell.styles.textColor = [244, 63, 94]; // rose-500
+          }
+        }
       },
       didDrawPage: (hookData: any) => {
         // Rodapé com número da página
