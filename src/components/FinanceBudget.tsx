@@ -7,13 +7,13 @@ import { FixedBill } from '../types';
 
 export const FinanceBudget: React.FC = () => {
   const { data, setData } = useAppData();
-  
+
   // Salário do mês atual
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  
+
   const currentSalary = data.monthlySalaries?.[selectedMonth] ?? (data.salary || 0);
   const [isEditingSalary, setIsEditingSalary] = useState(false);
   const [tempSalary, setTempSalary] = useState(currentSalary.toString());
@@ -32,7 +32,7 @@ export const FinanceBudget: React.FC = () => {
 
   const [showNewBillForm, setShowNewBillForm] = useState(false);
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
-  
+
   const [newBill, setNewBill] = useState<Partial<FixedBill>>({
     name: '',
     amount: 0,
@@ -129,7 +129,7 @@ export const FinanceBudget: React.FC = () => {
         paymentSource: newBill.paymentSource,
         recurrence: newBill.recurrence || 'mensal'
       };
-      
+
       setData((prev) => {
         const bills = prev.fixedBills || [];
         if (editingBillId) {
@@ -138,7 +138,7 @@ export const FinanceBudget: React.FC = () => {
           return { ...prev, fixedBills: [...bills, bill] };
         }
       });
-      
+
       setNewBill({ name: '', amount: 0, category: 'Moradia', dueDate: '', paymentSource: '', recurrence: 'mensal' });
       setShowNewBillForm(false);
       setEditingBillId(null);
@@ -182,7 +182,7 @@ export const FinanceBudget: React.FC = () => {
   const generateProjection = () => {
     const monthsNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const currentD = new Date();
-    
+
     // Obter array de salários ordenados por data para fallback
     const knownSalaries = Object.entries(data.monthlySalaries || {})
       .sort((a, b) => a[0].localeCompare(b[0]))
@@ -196,11 +196,11 @@ export const FinanceBudget: React.FC = () => {
     for (let i = 0; i < 6; i++) {
       const targetDate = new Date(currentD.getFullYear(), currentD.getMonth() + i, 1);
       const targetYyyyMm = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
-      
+
       // Salário do mês alvo, se não existir pega o último conhecido
       const monthSalary = data.monthlySalaries?.[targetYyyyMm] ?? lastKnownSalary;
       const monthExtra = data.monthlyExtras?.[targetYyyyMm] ?? 0;
-      
+
       // Calculate total bills for this specific month
       const monthTotalBills = allFixedBills.reduce((acc, bill) => {
         const bRecurrence = bill.recurrence || 'mensal';
@@ -257,14 +257,14 @@ export const FinanceBudget: React.FC = () => {
             <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider">
               Salário Previsto
             </p>
-            <input 
-              type="month" 
-              value={selectedMonth} 
+            <input
+              type="month"
+              value={selectedMonth}
               onChange={handleMonthChange}
               className="bg-white/10 text-xs text-white border border-white/20 rounded-lg px-2 py-1 outline-none"
             />
           </div>
-          
+
           {isEditingSalary ? (
             <div className="flex items-center gap-2 mt-1">
               <input
@@ -373,7 +373,7 @@ export const FinanceBudget: React.FC = () => {
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} width={45} />
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 labelStyle={{ fontWeight: 'bold', color: '#1e293b' }}
                 formatter={(value: number) => formatCurrency(value, data.settings.currency)}
@@ -394,7 +394,7 @@ export const FinanceBudget: React.FC = () => {
               onClick={() => setShowNewBillForm(true)}
               className="p-1.5 bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 transition-colors"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-6 h-6" />
             </button>
           )}
         </div>
@@ -404,7 +404,7 @@ export const FinanceBudget: React.FC = () => {
             <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
               {editingBillId ? 'Editar Conta' : 'Nova Conta'}
             </h4>
-            
+
             <input
               type="text"
               placeholder="Nome da Conta"
@@ -412,7 +412,7 @@ export const FinanceBudget: React.FC = () => {
               onChange={(e) => setNewBill({ ...newBill, name: e.target.value })}
               className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
-            
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Valor</label>
@@ -424,7 +424,7 @@ export const FinanceBudget: React.FC = () => {
                   className="w-full text-sm p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
-              
+
               <div>
                 <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Categoria</label>
                 <select
@@ -445,7 +445,7 @@ export const FinanceBudget: React.FC = () => {
                   ))}
                   <option value="__NEW__">➕ Nova Categoria...</option>
                 </select>
-                
+
                 {isAddingNewCategory && (
                   <div className="mt-2 flex gap-2">
                     <input
@@ -562,7 +562,7 @@ export const FinanceBudget: React.FC = () => {
                       - {formatCurrency(bill.amount, data.settings.currency)}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-2 mt-1">
                     <div className="flex items-center gap-3">
                       {formattedDate && (
@@ -576,7 +576,7 @@ export const FinanceBudget: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Botões sempre visíveis mas discretos, sem depender de hover de grupo */}
                     <div className="flex items-center gap-1">
                       <button

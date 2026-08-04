@@ -179,7 +179,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   // CONTAS DO MÊS SELECIONADO NO CALENDÁRIO
   // ==========================================
   const selectedMonthBillsList: Array<{ id: string; title: string; amount: number; dueDate: string; status: string; isFixed: boolean }> = [];
-  
+
   data.bills.forEach(b => {
     if (b.dueDate.startsWith(currentYyyyMm)) {
       selectedMonthBillsList.push({ id: b.id, title: b.title, amount: b.amount, dueDate: b.dueDate, status: b.status, isFixed: false });

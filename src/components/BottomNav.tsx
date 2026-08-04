@@ -33,11 +33,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
               key={tab.id}
               onClick={() => onChangeTab(tab.id)}
               id={`nav-tab-${tab.id}`}
-              className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all duration-200 min-w-[60px] ${
-                isActive
+              className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all duration-200 min-w-[60px] ${isActive
                   ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
                   : 'text-slate-400 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-slate-200'
-              }`}
+                }`}
             >
               <div className="relative">
                 <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[1.75px]'}`} />
