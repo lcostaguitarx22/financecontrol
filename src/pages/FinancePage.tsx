@@ -344,7 +344,11 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => deleteTransaction(tx.id)}
+                        onClick={() => {
+                          if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
+                            deleteTransaction(tx.id);
+                          }
+                        }}
                         className="opacity-100 group-hover:opacity-100 p-1 text-slate-400 hover:text-pink-600 transition-opacity"
                         title="Excluir"
                       >

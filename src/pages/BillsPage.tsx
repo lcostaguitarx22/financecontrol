@@ -362,7 +362,14 @@ export const BillsPage: React.FC = () => {
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => deleteBill(bill.id)} className="text-slate-400 hover:text-pink-600">
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Tem certeza que deseja excluir esta conta?')) {
+                              deleteBill(bill.id);
+                            }
+                          }}
+                          className="text-slate-400 hover:text-pink-600"
+                        >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </span>
