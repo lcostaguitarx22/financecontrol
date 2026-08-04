@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Check, Bitcoin, Loader2 } from 'lucide-react';
 import { addCryptoAsset, updateCryptoAsset } from '../../services/storage';
 import { useAppData } from '../../hooks/useAppData';
@@ -140,7 +141,7 @@ export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSucce
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-visible flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
@@ -285,6 +286,7 @@ export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSucce
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

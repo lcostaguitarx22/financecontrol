@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Check, TrendingUp } from 'lucide-react';
 import { addRendimento } from '../../services/storage';
 
@@ -35,8 +36,8 @@ export const NewRendimentoModal: React.FC<NewRendimentoModalProps> = ({ onClose,
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
@@ -90,6 +91,7 @@ export const NewRendimentoModal: React.FC<NewRendimentoModalProps> = ({ onClose,
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

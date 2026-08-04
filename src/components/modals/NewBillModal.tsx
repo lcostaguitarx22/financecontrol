@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Check } from 'lucide-react';
 import { addBill, addTransaction, getAppData, saveAppData } from '../../services/storage';
 
@@ -106,7 +107,7 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-indigo-100 dark:border-slate-800 overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-indigo-50 dark:border-slate-800">
@@ -236,6 +237,7 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, ArrowDownRight, ArrowUpRight, FileText, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -23,7 +24,7 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({ date, events, 
   const dateObj = new Date(y, m - 1, d);
   const formattedDate = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
@@ -107,6 +108,7 @@ export const DayDetailsModal: React.FC<DayDetailsModalProps> = ({ date, events, 
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
