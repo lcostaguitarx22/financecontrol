@@ -131,11 +131,34 @@ export const FinanceBudget: React.FC = () => {
       };
 
       setData((prev) => {
-        const bills = prev.fixedBills || [];
+        const fixedBillsList = prev.fixedBills || [];
         if (editingBillId) {
-          return { ...prev, fixedBills: bills.map(b => b.id === editingBillId ? bill : b) };
+          const newFixedBills = fixedBillsList.map(b => b.id === editingBillId ? bill : b);
+          
+          const updatedBills = (prev.bills || []).map(realBill => {
+            if (realBill.fixedBillId === editingBillId && realBill.status === 'pendente') {
+               let newDueDate = realBill.dueDate;
+               if (bill.dueDate && bill.dueDate.includes('-')) {
+                  const day = bill.dueDate.split('-')[2];
+                  if (day && realBill.dueDate.includes('-')) {
+                    const yyyymm = realBill.dueDate.substring(0, 7);
+                    newDueDate = `${yyyymm}-${day}`;
+                  }
+               }
+               return {
+                  ...realBill,
+                  title: bill.name,
+                  amount: bill.amount,
+                  category: bill.category,
+                  dueDate: newDueDate
+               };
+            }
+            return realBill;
+          });
+
+          return { ...prev, fixedBills: newFixedBills, bills: updatedBills };
         } else {
-          return { ...prev, fixedBills: [...bills, bill] };
+          return { ...prev, fixedBills: [...fixedBillsList, bill] };
         }
       });
 
@@ -168,7 +191,8 @@ export const FinanceBudget: React.FC = () => {
   const handleDeleteBill = (id: string) => {
     setData((prev) => ({
       ...prev,
-      fixedBills: (prev.fixedBills || []).filter((b) => b.id !== id)
+      fixedBills: (prev.fixedBills || []).filter((b) => b.id !== id),
+      bills: (prev.bills || []).filter((b) => !(b.fixedBillId === id && b.status === 'pendente'))
     }));
   };
 
