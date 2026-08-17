@@ -150,7 +150,9 @@ export const FinanceBudget: React.FC = () => {
                   title: bill.name,
                   amount: bill.amount,
                   category: bill.category,
-                  dueDate: newDueDate
+                  dueDate: newDueDate,
+                  paymentMethod: bill.paymentSource === 'Cartão de Crédito' ? 'cartao' : (bill.paymentSource === 'Pix' ? 'pix' : 'saldo'),
+                  iconName: bill.paymentSource === 'Cartão de Crédito' ? 'CreditCard' : 'FileText',
                };
             }
             return realBill;

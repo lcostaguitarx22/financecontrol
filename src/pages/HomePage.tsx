@@ -405,6 +405,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
           </div>
         </div>
 
+        {/* Card: Fatura do Cartão */}
+        <div className="bg-gradient-to-br from-pink-600 to-rose-700 rounded-xl p-5 shadow-sm text-white flex items-center gap-4">
+          <div className="p-3 bg-white/20 rounded-2xl shrink-0">
+            <CreditCard className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-pink-100">Fatura do Cartão (Pendente)</p>
+            <p className="text-xl font-extrabold mt-0.5">{formatCurrency(faturaCartao, data.settings.currency)}</p>
+          </div>
+        </div>
+
         {/* 4a. ORÇAMENTO PREVISTO (Mês Atual) */}
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-5 shadow-sm text-white">
           <div className="flex items-center gap-2 mb-4">

@@ -159,6 +159,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   status: 'pendente' as const,
                   category: fixedBill.category,
                   fixedBillId: fixedBill.id,
+                  paymentMethod: fixedBill.paymentSource === 'Cartão de Crédito' ? 'cartao' : (fixedBill.paymentSource === 'Pix' ? 'pix' : 'saldo'),
+                  iconName: fixedBill.paymentSource === 'Cartão de Crédito' ? 'CreditCard' : 'FileText',
                 };
                 updatedBills.unshift(newBill);
                 needsUpdate = true;
