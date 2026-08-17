@@ -45,6 +45,39 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
+  const [purchaseDate, setPurchaseDate] = useState(getTodayFormatted());
+
+  React.useEffect(() => {
+    if (paymentMethod === 'cartao') {
+      const d = new Date(purchaseDate + 'T12:00:00');
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const day = d.getDate();
+
+      let isClosed = false;
+      if (month === 1) { // Fevereiro
+        if (day >= 27) isClosed = true;
+      } else {
+        if (day >= 30) isClosed = true;
+      }
+
+      let invoiceMonth = month;
+      if (isClosed) {
+        invoiceMonth += 1;
+      }
+
+      let dueMonth = invoiceMonth + 1;
+      let dueYear = year;
+
+      if (dueMonth > 11) {
+        dueMonth -= 12;
+        dueYear += 1;
+      }
+
+      setDueDate(`${dueYear}-${String(dueMonth + 1).padStart(2, '0')}-10`);
+    }
+  }, [paymentMethod, purchaseDate]);
+
   React.useEffect(() => {
     getAppData().then(data => {
       if (data.settings?.categories && data.settings.categories.length > 0) {
@@ -156,17 +189,34 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Vencimento
+                {paymentMethod === 'cartao' ? 'Data da Compra' : 'Vencimento'}
               </label>
               <input
                 type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                value={paymentMethod === 'cartao' ? purchaseDate : dueDate}
+                onChange={(e) => {
+                  if (paymentMethod === 'cartao') {
+                    setPurchaseDate(e.target.value);
+                  } else {
+                    setDueDate(e.target.value);
+                  }
+                }}
                 className="w-full px-4 py-3 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />
             </div>
           </div>
+
+          {paymentMethod === 'cartao' && (
+            <div className="bg-indigo-50/50 dark:bg-slate-800/50 p-3 rounded-2xl border border-indigo-100 dark:border-slate-700 mt-2">
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                Vencimento da fatura: <span className="font-bold text-indigo-600 dark:text-indigo-400">{dueDate.split('-').reverse().join('/')}</span>
+              </p>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Calculado automaticamente (fechamento dia {new Date(purchaseDate + 'T12:00:00').getMonth() === 1 ? '27' : '30'})
+              </p>
+            </div>
+          )}
           
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
