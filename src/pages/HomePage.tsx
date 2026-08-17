@@ -83,18 +83,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   const savingsRate = receitasMes > 0 ? ((receitasMes - despesasMes) / receitasMes) * 100 : 0;
 
   const historicalCardData: Record<string, number> = {
-    '01': 9005.55,
-    '02': 8326.74,
-    '03': 3970.05,
-    '04': 4085.83,
-    '05': 5147.60,
-    '06': 2301.93,
-    '07': 966.27,
-    '08': 2131.35,
-    '09': 4067.58,
-    '10': 1909.16,
-    '11': 1645.95,
-    '12': 1051.51
+    '01': 8326.74,
+    '02': 3970.05,
+    '03': 4085.83,
+    '04': 5147.60,
+    '05': 2301.93,
+    '06': 966.27,
+    '07': 2131.35,
+    '08': 4067.58,
+    '09': 1909.16,
+    '10': 1645.95,
+    '11': 1051.51,
+    '12': 0
   };
 
   const monthsNamesShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -102,8 +102,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     const monthStr = String(index + 1).padStart(2, '0');
     const yyyyMm = `${currentYearIdx}-${monthStr}`;
 
+    // Para a fatura do cartão, a competência é o mês atual, mas o vencimento é no mês seguinte.
+    let paymentYear = currentYearIdx;
+    let paymentMonth = index + 2;
+    if (paymentMonth > 12) {
+      paymentMonth = 1;
+      paymentYear++;
+    }
+    const paymentYyyyMm = `${paymentYear}-${String(paymentMonth).padStart(2, '0')}`;
+
     let faturaMes = data.bills
-      .filter(b => b.paymentMethod === 'cartao' && b.dueDate.startsWith(yyyyMm))
+      .filter(b => b.paymentMethod === 'cartao' && b.dueDate.startsWith(paymentYyyyMm))
       .reduce((acc, b) => acc + b.amount, 0);
 
     // Injeta os dados históricos no gráfico para o ano de 2026
@@ -647,11 +656,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Gráfico Fatura do Cartão */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex flex-col">
-          <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">Fatura Cartão ({currentYearIdx})</h3>
+          <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">Fatura Bradesco ({currentYearIdx})</h3>
           <div className="h-48 -ml-4 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={yearlyChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#6a7077ff" opacity={0.5} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} width={45} tickFormatter={(val) => `R$${val}`} />
                 <RechartsTooltip
