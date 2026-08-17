@@ -142,7 +142,17 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 if (parts.length === 3) dueDay = parts[2];
               }
 
-              const expectedDueDate = `${currentYyyyMm}-${dueDay}`;
+              let expectedDueDate = `${currentYyyyMm}-${dueDay}`;
+              if (fixedBill.paymentSource === 'Cartão de Crédito') {
+                // Se for cartão, a competência é o mês atual, mas o vencimento é no mês seguinte (dia 10)
+                let dueYear = parseInt(currentYear);
+                let dueMonthNum = parseInt(currentMonthStr) + 1;
+                if (dueMonthNum > 12) {
+                  dueMonthNum = 1;
+                  dueYear++;
+                }
+                expectedDueDate = `${dueYear}-${String(dueMonthNum).padStart(2, '0')}-10`;
+              }
               
               const billId = `b-auto-${fixedBill.id}-${currentYyyyMm}`;
               const isDeleted = (loadedData.deletedGeneratedBills || []).includes(billId);

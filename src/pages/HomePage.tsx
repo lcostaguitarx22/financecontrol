@@ -102,18 +102,29 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     const monthStr = String(index + 1).padStart(2, '0');
     const yyyyMm = `${currentYearIdx}-${monthStr}`;
 
-    // Para a fatura do cartão, a competência é o mês atual, mas o vencimento é no mês seguinte.
-    let paymentYear = currentYearIdx;
-    let paymentMonth = index + 2;
-    if (paymentMonth > 12) {
-      paymentMonth = 1;
-      paymentYear++;
-    }
-    const paymentYyyyMm = `${paymentYear}-${String(paymentMonth).padStart(2, '0')}`;
-
     let faturaMes = data.bills
-      .filter(b => b.paymentMethod === 'cartao' && b.dueDate.startsWith(paymentYyyyMm))
-      .reduce((acc, b) => acc + b.amount, 0);
+      .filter(b => {
+        if (b.paymentMethod !== 'cartao' || !b.dueDate) return false;
+        
+        // Extrai o ano e o mês de vencimento da conta
+        const parts = b.dueDate.split('-');
+        if (parts.length < 2) return false;
+        
+        let dueYear = parseInt(parts[0], 10);
+        let dueMonth = parseInt(parts[1], 10);
+        
+        // A competência da fatura do cartão é sempre o mês ANTERIOR ao vencimento
+        let compMonth = dueMonth - 1;
+        let compYear = dueYear;
+        if (compMonth === 0) {
+          compMonth = 12;
+          compYear -= 1;
+        }
+        
+        const compYyyyMm = `${compYear}-${String(compMonth).padStart(2, '0')}`;
+        return compYyyyMm === yyyyMm;
+      })
+      .reduce((acc, b) => acc + Number(b.amount || 0), 0);
 
     // Injeta os dados históricos no gráfico para o ano de 2026
     if (currentYearIdx === 2026) {
