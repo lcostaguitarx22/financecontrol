@@ -25,6 +25,7 @@ export const initialAppData: AppData = {
   bills: [],
   budgets: [],
   fixedBills: [],
+  creditCards: [],
   monthlySalaries: {},
   monthlyExtras: {},
   salary: 0,

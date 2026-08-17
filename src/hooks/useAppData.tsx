@@ -143,8 +143,46 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
               }
 
               let expectedDueDate = `${currentYyyyMm}-${dueDay}`;
-              if (fixedBill.paymentSource === 'Cartão de Crédito') {
-                // Se for cartão, a competência é o mês atual, mas o vencimento é no mês seguinte (dia 10)
+              let finalPaymentMethod: any = 'saldo';
+              let finalIconName = 'FileText';
+
+              if (fixedBill.paymentSource && fixedBill.paymentSource.startsWith('cc:')) {
+                const cardId = fixedBill.paymentSource.split(':')[1];
+                const card = (loadedData.creditCards || []).find(c => c.id === cardId);
+                
+                finalPaymentMethod = 'cartao';
+                finalIconName = 'CreditCard';
+
+                // Se a despesa é no mês currentYyyyMm, o dia de "compra" (ou de impacto) é o dueDay.
+                const purchaseDay = parseInt(dueDay, 10);
+                const closingDay = card ? card.closingDay : 30;
+                const cardDueDay = card ? card.dueDay : 10;
+                
+                const [curYearStr, curMonthStr] = currentYyyyMm.split('-');
+                let invoiceMonth = parseInt(curMonthStr, 10);
+                let dueYear = parseInt(curYearStr, 10);
+
+                // Se passou do fechamento, cai no PRÓXIMO mês de referência
+                if (purchaseDay >= closingDay) {
+                  invoiceMonth += 1;
+                }
+
+                // Agora, com base no mês de referência (invoiceMonth), qual o mês de vencimento?
+                // Se fechamento > vencimento, a fatura vence no mês seguinte ao mês de referência
+                let finalDueMonth = invoiceMonth;
+                if (closingDay > cardDueDay) {
+                  finalDueMonth += 1;
+                }
+
+                if (finalDueMonth > 12) {
+                  finalDueMonth -= 12;
+                  dueYear += 1;
+                }
+                
+                expectedDueDate = `${dueYear}-${String(finalDueMonth).padStart(2, '0')}-${String(cardDueDay).padStart(2, '0')}`;
+              } else if (fixedBill.paymentSource === 'Cartão de Crédito') {
+                finalPaymentMethod = 'cartao';
+                finalIconName = 'CreditCard';
                 const [curYearStr, curMonthStr] = currentYyyyMm.split('-');
                 let dueYear = parseInt(curYearStr);
                 let dueMonthNum = parseInt(curMonthStr) + 1;
@@ -153,6 +191,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   dueYear++;
                 }
                 expectedDueDate = `${dueYear}-${String(dueMonthNum).padStart(2, '0')}-10`;
+              } else if (fixedBill.paymentSource === 'Pix') {
+                finalPaymentMethod = 'pix';
               }
               
               const billId = `b-auto-${fixedBill.id}-${currentYyyyMm}`;
@@ -170,8 +210,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   status: 'pendente' as const,
                   category: fixedBill.category,
                   fixedBillId: fixedBill.id,
-                  paymentMethod: fixedBill.paymentSource === 'Cartão de Crédito' ? 'cartao' : (fixedBill.paymentSource === 'Pix' ? 'pix' : 'saldo'),
-                  iconName: fixedBill.paymentSource === 'Cartão de Crédito' ? 'CreditCard' : 'FileText',
+                  paymentMethod: finalPaymentMethod,
+                  iconName: finalIconName,
                 };
                 updatedBills.unshift(newBill);
                 needsUpdate = true;

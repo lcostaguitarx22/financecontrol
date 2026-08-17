@@ -505,7 +505,7 @@ export const FinanceBudget: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Débito</label>
+                <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">Débito / Cartão</label>
                 <select
                   value={newBill.paymentSource}
                   onChange={(e) => setNewBill({ ...newBill, paymentSource: e.target.value })}
@@ -514,7 +514,10 @@ export const FinanceBudget: React.FC = () => {
                   <option value="">Não especificado</option>
                   <option value="Saldo em conta">Saldo em conta</option>
                   <option value="Pix">Pix</option>
-                  <option value="Cartão de Crédito">Cartão de Crédito</option>
+                  {(data.creditCards || []).map(c => (
+                    <option key={c.id} value={`cc:${c.id}`}>Cartão: {c.name}</option>
+                  ))}
+                  <option value="Cartão de Crédito">Cartão (Antigo / Genérico)</option>
                 </select>
               </div>
             </div>

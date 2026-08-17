@@ -37,8 +37,9 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { useAppData } from '../hooks/useAppData';
 import { updateSettings } from '../services/storage';
-import { Currency, ThemeMode, AppData } from '../types';
 import { formatCurrency } from '../utils/formatters';
+import { CreditCard as CreditCardIcon } from 'lucide-react';
+import { CreditCard } from '../types';
 
 interface MorePageProps {
   onOpenRendimento: () => void;
@@ -51,6 +52,12 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
   const [showCategories, setShowCategories] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+
+  const [showCreditCards, setShowCreditCards] = useState(false);
+  const [isAddingCard, setIsAddingCard] = useState(false);
+  const [newCardName, setNewCardName] = useState('');
+  const [newCardClosing, setNewCardClosing] = useState('');
+  const [newCardDue, setNewCardDue] = useState('');
 
   const categories = data.settings.categories || [
     'Água', 'Assinaturas', 'Dízimo', 'Energia', 'Internet',
@@ -80,6 +87,47 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
       ...prev,
       settings: { ...prev.settings, ...partialSettings }
     }));
+  };
+
+  const creditCards = data.creditCards || [];
+
+  const handleAddCreditCard = () => {
+    if (!newCardName.trim() || !newCardClosing || !newCardDue) {
+      alert('Preencha todos os campos do cartão.');
+      return;
+    }
+    const closingDay = parseInt(newCardClosing, 10);
+    const dueDay = parseInt(newCardDue, 10);
+    if (isNaN(closingDay) || closingDay < 1 || closingDay > 31 || isNaN(dueDay) || dueDay < 1 || dueDay > 31) {
+      alert('Dias de fechamento e vencimento devem ser entre 1 e 31.');
+      return;
+    }
+
+    const newCard: CreditCard = {
+      id: `cc-${Date.now()}`,
+      name: newCardName.trim(),
+      closingDay,
+      dueDay,
+    };
+
+    setData((prev) => ({
+      ...prev,
+      creditCards: [...(prev.creditCards || []), newCard]
+    }));
+    
+    setIsAddingCard(false);
+    setNewCardName('');
+    setNewCardClosing('');
+    setNewCardDue('');
+  };
+
+  const handleDeleteCreditCard = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este cartão? As contas já geradas manterão a data de vencimento atual.')) {
+      setData((prev) => ({
+        ...prev,
+        creditCards: (prev.creditCards || []).filter(c => c.id !== id)
+      }));
+    }
   };
 
   const handleCurrencyChange = (curr: Currency) => {
@@ -256,6 +304,99 @@ export const MorePage: React.FC<MorePageProps> = ({ onOpenRendimento }) => {
             className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
           />
         </div>
+      </div>
+
+      {/* Card 2.5: Cartões de Crédito */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 space-y-3">
+        <div 
+          className="flex items-center justify-between cursor-pointer"
+          onClick={() => setShowCreditCards(!showCreditCards)}
+        >
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl text-indigo-600">
+              <CreditCardIcon className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+              Meus Cartões de Crédito
+            </h3>
+          </div>
+          <button
+            className="p-2 bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 transition-colors shadow-xs"
+          >
+            {showCreditCards ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {showCreditCards && (
+          <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2">
+            {creditCards.length === 0 ? (
+              <p className="text-xs text-slate-500 text-center py-2">Nenhum cartão cadastrado.</p>
+            ) : (
+              creditCards.map((card) => (
+                <div key={card.id} className="p-3 bg-indigo-50/40 dark:bg-slate-800/60 rounded-2xl flex items-center justify-between gap-3 border border-indigo-50 dark:border-slate-700/50">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">{card.name}</p>
+                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                      Fecha dia {card.closingDay} • Vence dia {card.dueDay}
+                    </p>
+                  </div>
+                  <button onClick={() => handleDeleteCreditCard(card.id)} className="p-2 hover:bg-pink-100 dark:hover:bg-pink-900/30 text-slate-400 hover:text-pink-600 transition-colors rounded-xl">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
+            
+            {isAddingCard ? (
+              <div className="mt-4 p-3 border border-indigo-100 dark:border-slate-700 rounded-2xl space-y-3 bg-white dark:bg-slate-900">
+                <input
+                  type="text"
+                  placeholder="Nome do Cartão (ex: Nubank)"
+                  value={newCardName}
+                  onChange={(e) => setNewCardName(e.target.value)}
+                  className="w-full px-3 py-2 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Dia do Fechamento</label>
+                    <input
+                      type="number"
+                      placeholder="Ex: 25"
+                      value={newCardClosing}
+                      onChange={(e) => setNewCardClosing(e.target.value)}
+                      className="w-full px-3 py-2 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Dia do Vencimento</label>
+                    <input
+                      type="number"
+                      placeholder="Ex: 05"
+                      value={newCardDue}
+                      onChange={(e) => setNewCardDue(e.target.value)}
+                      className="w-full px-3 py-2 bg-indigo-50/30 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={handleAddCreditCard} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors">
+                    Salvar Cartão
+                  </button>
+                  <button onClick={() => setIsAddingCard(false)} className="px-3 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAddingCard(true)}
+                className="w-full mt-2 p-3 border-2 border-dashed border-indigo-200 dark:border-slate-700 rounded-2xl flex items-center justify-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:bg-indigo-50 dark:hover:bg-slate-800/50 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Cadastrar Cartão
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Card 3: Categorias de Gastos */}

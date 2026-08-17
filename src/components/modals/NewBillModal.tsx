@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check } from 'lucide-react';
 import { addBill, addTransaction, getAppData, saveAppData } from '../../services/storage';
+import { CreditCard } from '../../types';
 
 interface NewBillModalProps {
   onClose: () => void;
@@ -45,43 +46,77 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
+  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string>('');
+
   const [purchaseDate, setPurchaseDate] = useState(getTodayFormatted());
 
   React.useEffect(() => {
     if (paymentMethod === 'cartao') {
+      const card = creditCards.find(c => c.id === selectedCardId);
       const d = new Date(purchaseDate + 'T12:00:00');
       const year = d.getFullYear();
       const month = d.getMonth();
       const day = d.getDate();
+      
+      const closingDay = card ? card.closingDay : (month === 1 ? 27 : 30);
+      const dueDay = card ? card.dueDay : 10;
 
-      let isClosed = false;
-      if (month === 1) { // Fevereiro
-        if (day >= 27) isClosed = true;
-      } else {
-        if (day >= 30) isClosed = true;
-      }
+      let isClosed = day >= closingDay;
 
       let invoiceMonth = month;
       if (isClosed) {
         invoiceMonth += 1;
       }
 
-      let dueMonth = invoiceMonth + 1;
+      let dueMonth = invoiceMonth + 1; // Fatura sempre vence no mês seguinte ao da fatura (ou na fatura atual + 1?)
+      // Wait, no. If invoiceMonth is the "reference" month of the invoice...
+      // Usually, if a bill is closed, it moves to the NEXT invoice.
+      // E.g. purchase on August 17. Closing is 30, Due is 10.
+      // 17 < 30 -> isClosed = false -> invoiceMonth = August (7)
+      // dueMonth should be September (8) because invoice of August is paid in September.
+      // Wait, dueMonth = invoiceMonth + 1 is what the current logic does.
+      
+      // But wait! If closing is 15, due is 25.
+      // Purchase on August 10. 10 < 15 -> isClosed = false -> invoiceMonth = August (7). 
+      // dueMonth should be August (7) because it's paid on August 25.
+      // The current logic always does `invoiceMonth + 1` for `dueMonth` because it assumed due is 10th of NEXT month.
+      // We should calculate the true date.
+      
+      // Let's refine the logic:
+      // A credit card invoice has a "due date". The closing date is usually ~7-10 days BEFORE the due date.
+      // If closingDay < dueDay, they are in the SAME month. 
+      // e.g. closing = 15, due = 25.
+      // If closingDay > dueDay, the closing is in month X and due is in month X+1.
+      // e.g. closing = 30, due = 10.
+      
+      let finalDueMonth = invoiceMonth;
+      if (closingDay > dueDay) {
+         finalDueMonth += 1;
+      }
+      
       let dueYear = year;
-
-      if (dueMonth > 11) {
-        dueMonth -= 12;
+      if (finalDueMonth > 11) {
+        finalDueMonth -= 12;
         dueYear += 1;
       }
 
-      setDueDate(`${dueYear}-${String(dueMonth + 1).padStart(2, '0')}-10`);
+      setDueDate(`${dueYear}-${String(finalDueMonth + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`);
     }
-  }, [paymentMethod, purchaseDate]);
+  }, [paymentMethod, purchaseDate, selectedCardId, creditCards]);
 
   React.useEffect(() => {
     getAppData().then(data => {
       if (data.settings?.categories && data.settings.categories.length > 0) {
         setCategories(data.settings.categories);
+      }
+      if (data.creditCards && data.creditCards.length > 0) {
+        setCreditCards(data.creditCards);
+        if (!selectedCardId && editMode && initialBill.paymentSource) {
+           setSelectedCardId(initialBill.paymentSource);
+        } else if (!selectedCardId) {
+           setSelectedCardId(data.creditCards[0].id);
+        }
       }
     });
   }, []);
@@ -123,6 +158,7 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
       status: finalStatus as 'pendente' | 'pago',
       category,
       paymentMethod,
+      paymentSource: paymentMethod === 'cartao' ? selectedCardId : undefined,
       iconName: paymentMethod === 'cartao' ? 'CreditCard' : 'FileText',
       isUrgent,
     };
@@ -209,11 +245,30 @@ export const NewBillModal: React.FC<NewBillModalProps> = ({ onClose, onSuccess }
 
           {paymentMethod === 'cartao' && (
             <div className="bg-indigo-50/50 dark:bg-slate-800/50 p-3 rounded-2xl border border-indigo-100 dark:border-slate-700 mt-2">
+              {creditCards.length > 0 ? (
+                <div className="mb-3">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Qual cartão de crédito?
+                  </label>
+                  <select
+                    value={selectedCardId}
+                    onChange={(e) => setSelectedCardId(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-indigo-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  >
+                    {creditCards.map(card => (
+                      <option key={card.id} value={card.id}>{card.name} (Vence dia {card.dueDay})</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <p className="text-[10px] text-pink-600 font-medium mb-3">Nenhum cartão cadastrado. Vá em Mais &gt; Meus Cartões para configurar.</p>
+              )}
+              
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                 Vencimento da fatura: <span className="font-bold text-indigo-600 dark:text-indigo-400">{dueDate.split('-').reverse().join('/')}</span>
               </p>
               <p className="text-[10px] text-slate-500 mt-1">
-                Calculado automaticamente (fechamento dia {new Date(purchaseDate + 'T12:00:00').getMonth() === 1 ? '27' : '30'})
+                Calculado automaticamente com base no fechamento do cartão.
               </p>
             </div>
           )}

@@ -49,6 +49,7 @@ export interface Bill {
   status: BillStatus;
   category: string;
   paymentMethod?: 'saldo' | 'pix' | 'cartao';
+  paymentSource?: string;
   iconName?: string;
   isUrgent?: boolean;
   transactionId?: string;
@@ -61,6 +62,14 @@ export interface CategoryBudget {
   allocated: number;
   usedPercentage: number;
   iconName: string;
+}
+
+export interface CreditCard {
+  id: string;
+  name: string;
+  closingDay: number;
+  dueDay: number;
+  limit?: number;
 }
 
 export interface FixedBill {
@@ -99,6 +108,7 @@ export interface AppData {
   bills: Bill[];
   budgets: CategoryBudget[];
   fixedBills: FixedBill[];
+  creditCards?: CreditCard[];
   monthlySalaries?: Record<string, number>; // ex: { "2026-08": 5000, "2026-09": 5200 }
   monthlyExtras?: Record<string, number>;
   salary?: number; // Deprecated, keep for backward compatibility temporarily

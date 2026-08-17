@@ -113,12 +113,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         let dueYear = parseInt(parts[0], 10);
         let dueMonth = parseInt(parts[1], 10);
         
-        // A competência da fatura do cartão é sempre o mês ANTERIOR ao vencimento
         let compMonth = dueMonth - 1;
+        
+        if (b.paymentSource) {
+           const cardId = b.paymentSource.startsWith('cc:') ? b.paymentSource.split(':')[1] : b.paymentSource;
+           const card = (data.creditCards || []).find(c => c.id === cardId);
+           if (card) {
+               if (card.closingDay <= card.dueDay) {
+                   compMonth = dueMonth; // Fatura vence no mesmo mês do fechamento
+               } else {
+                   compMonth = dueMonth - 1; // Fatura vence no mês seguinte ao fechamento
+               }
+           }
+        }
+        
         let compYear = dueYear;
         if (compMonth === 0) {
           compMonth = 12;
           compYear -= 1;
+        } else if (compMonth === 13) {
+          compMonth = 1;
+          compYear += 1;
         }
         
         const compYyyyMm = `${compYear}-${String(compMonth).padStart(2, '0')}`;
