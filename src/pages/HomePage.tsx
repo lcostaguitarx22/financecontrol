@@ -118,7 +118,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     // Injeta os dados históricos no gráfico para o ano de 2026
     if (currentYearIdx === 2026) {
       const hist = historicalCardData[monthStr] || 0;
-      faturaMes = Math.max(faturaMes, hist);
+      faturaMes += hist; // Soma as novas compras cadastradas no app com o histórico
     }
 
     const gastosMes = data.transactions
