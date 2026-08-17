@@ -145,8 +145,9 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
               let expectedDueDate = `${currentYyyyMm}-${dueDay}`;
               if (fixedBill.paymentSource === 'Cartão de Crédito') {
                 // Se for cartão, a competência é o mês atual, mas o vencimento é no mês seguinte (dia 10)
-                let dueYear = parseInt(currentYear);
-                let dueMonthNum = parseInt(currentMonthStr) + 1;
+                const [curYearStr, curMonthStr] = currentYyyyMm.split('-');
+                let dueYear = parseInt(curYearStr);
+                let dueMonthNum = parseInt(curMonthStr) + 1;
                 if (dueMonthNum > 12) {
                   dueMonthNum = 1;
                   dueYear++;
