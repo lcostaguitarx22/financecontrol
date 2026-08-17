@@ -620,7 +620,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             ))
           )}
         </div>
-        </div>
       </div>
 
       {/* 4.5 GRÁFICOS ANUAIS */}
