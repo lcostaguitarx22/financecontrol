@@ -82,14 +82,35 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const savingsRate = receitasMes > 0 ? ((receitasMes - despesasMes) / receitasMes) * 100 : 0;
 
+  const historicalCardData: Record<string, number> = {
+    '01': 9005.55,
+    '02': 8326.74,
+    '03': 3970.05,
+    '04': 4085.83,
+    '05': 5147.60,
+    '06': 2301.93,
+    '07': 966.27,
+    '08': 2131.35,
+    '09': 4067.58,
+    '10': 1909.16,
+    '11': 1645.95,
+    '12': 1051.51
+  };
+
   const monthsNamesShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   const yearlyChartData = monthsNamesShort.map((monthName, index) => {
     const monthStr = String(index + 1).padStart(2, '0');
     const yyyyMm = `${currentYearIdx}-${monthStr}`;
 
-    const faturaMes = data.bills
+    let faturaMes = data.bills
       .filter(b => b.paymentMethod === 'cartao' && b.dueDate.startsWith(yyyyMm))
       .reduce((acc, b) => acc + b.amount, 0);
+
+    // Injeta os dados históricos no gráfico para o ano de 2026
+    if (currentYearIdx === 2026) {
+      const hist = historicalCardData[monthStr] || 0;
+      faturaMes = Math.max(faturaMes, hist);
+    }
 
     const gastosMes = data.transactions
       .filter(t => t.type === 'despesa' && t.date.startsWith(yyyyMm))
