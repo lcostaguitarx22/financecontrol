@@ -64,8 +64,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     return acc + (c.amount * livePrice);
   }, 0);
 
+  const currentMonthYyyyMm = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
   const faturaCartao = data.bills
-    .filter((b) => b.paymentMethod === 'cartao' && b.status !== 'pago')
+    .filter((b) => b.paymentMethod === 'cartao' && b.status !== 'pago' && b.dueDate?.startsWith(currentMonthYyyyMm))
     .reduce((acc, b) => acc + b.amount, 0);
 
   const saldoGeral = saldoCorrente + saldoCripto;
