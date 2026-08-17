@@ -28,7 +28,7 @@ import { NewBillModal } from '../components/modals/NewBillModal';
 import { DayDetailsModal, CalendarEvent } from '../components/modals/DayDetailsModal';
 
 export const BillsPage: React.FC = () => {
-  const { data } = useAppData();
+  const { data, reloadData } = useAppData();
   const [filter, setFilter] = useState<'Todas' | 'Pendentes'>('Todas');
   const [showNewBillModal, setShowNewBillModal] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
@@ -298,7 +298,7 @@ export const BillsPage: React.FC = () => {
             Lembre-se do pagamento de <strong className="text-white">{nextBill.title}</strong> programado para {nextBill.dueDate}.
           </p>
           <button
-            onClick={() => toggleBillPaid(nextBill.id)}
+            onClick={() => toggleBillPaid(nextBill.id).then(() => reloadData())}
             className="w-full py-2.5 bg-pink-500 hover:bg-pink-400 text-white font-bold rounded-2xl text-xs transition-all shadow-md shadow-pink-500/30"
           >
             Marcar como Pago
@@ -365,7 +365,7 @@ export const BillsPage: React.FC = () => {
                         <button
                           onClick={() => {
                             if (window.confirm('Tem certeza que deseja excluir esta conta?')) {
-                              deleteBill(bill.id);
+                              deleteBill(bill.id).then(() => reloadData());
                             }
                           }}
                           className="text-slate-400 hover:text-pink-600"
@@ -388,7 +388,7 @@ export const BillsPage: React.FC = () => {
                     {formatCurrency(bill.amount, data.settings.currency)}
                   </span>
                   <button
-                    onClick={() => toggleBillPaid(bill.id)}
+                    onClick={() => toggleBillPaid(bill.id).then(() => reloadData())}
                     className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${bill.status === 'pago'
                       ? 'bg-emerald-600 text-white'
                       : 'border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500'

@@ -33,7 +33,7 @@ interface FinancePageProps {
 }
 
 export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
-  const { data } = useAppData();
+  const { data, reloadData } = useAppData();
   const [activeTab, setActiveTab] = useState<'extrato' | 'orcamento'>('extrato');
   const [showNewTxModal, setShowNewTxModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
@@ -346,7 +346,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
                       <button
                         onClick={() => {
                           if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
-                            deleteTransaction(tx.id);
+                            deleteTransaction(tx.id).then(() => reloadData());
                           }
                         }}
                         className="opacity-100 group-hover:opacity-100 p-1 text-slate-400 hover:text-pink-600 transition-opacity"

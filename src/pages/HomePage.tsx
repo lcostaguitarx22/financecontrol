@@ -32,7 +32,7 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendimento }) => {
-  const { data, livePrices } = useAppData();
+  const { data, livePrices, reloadData } = useAppData();
   const [period, setPeriod] = useState('Este Mês');
 
   // ==========================================
