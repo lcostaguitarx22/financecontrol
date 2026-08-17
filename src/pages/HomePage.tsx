@@ -19,7 +19,7 @@ import {
   ArrowUpFromLine,
   Sparkles
 } from 'lucide-react';
-import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, AreaChart, Area } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency, formatDateBr } from '../utils/formatters';
 import { TabType } from '../types';
@@ -81,6 +81,26 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     ];
 
   const savingsRate = receitasMes > 0 ? ((receitasMes - despesasMes) / receitasMes) * 100 : 0;
+
+  const monthsNamesShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const yearlyChartData = monthsNamesShort.map((monthName, index) => {
+    const monthStr = String(index + 1).padStart(2, '0');
+    const yyyyMm = `${currentYearIdx}-${monthStr}`;
+
+    const faturaMes = data.bills
+      .filter(b => b.paymentMethod === 'cartao' && b.dueDate.startsWith(yyyyMm))
+      .reduce((acc, b) => acc + b.amount, 0);
+
+    const gastosMes = data.transactions
+      .filter(t => t.type === 'despesa' && t.date.startsWith(yyyyMm))
+      .reduce((acc, t) => acc + t.amount, 0);
+
+    return {
+      name: monthName,
+      Cartão: faturaMes,
+      Geral: gastosMes
+    };
+  });
 
   // ==========================================
   // 1. CALENDÁRIO
@@ -600,7 +620,59 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             ))
           )}
         </div>
+        </div>
       </div>
+
+      {/* 4.5 GRÁFICOS ANUAIS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Gráfico Fatura do Cartão */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex flex-col">
+          <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">Fatura Cartão ({currentYearIdx})</h3>
+          <div className="h-48 -ml-4 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={yearlyChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} width={45} tickFormatter={(val) => `R$${val}`} />
+                <RechartsTooltip
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  labelStyle={{ fontWeight: 'bold', color: '#1e293b' }}
+                  formatter={(value: number) => formatCurrency(value, data.settings.currency)}
+                  cursor={{ fill: 'transparent' }}
+                />
+                <Bar dataKey="Cartão" fill="#ec4899" radius={[4, 4, 0, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Gráfico Gastos Gerais */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex flex-col">
+          <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">Gastos Gerais ({currentYearIdx})</h3>
+          <div className="h-48 -ml-4 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={yearlyChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorGastos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} width={45} tickFormatter={(val) => `R$${val}`} />
+                <RechartsTooltip
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  labelStyle={{ fontWeight: 'bold', color: '#1e293b' }}
+                  formatter={(value: number) => formatCurrency(value, data.settings.currency)}
+                />
+                <Area type="monotone" dataKey="Geral" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorGastos)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       {/* 5. TRANSAÇÕES RECENTES (Até 8) */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
