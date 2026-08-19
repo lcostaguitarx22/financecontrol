@@ -34,8 +34,10 @@ const COMMON_CRYPTOS = [
 
 export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSuccess }) => {
   const { data, livePrices } = useAppData();
-  const editMode = !!(window as any).currentEditCrypto;
-  const initialAsset = (window as any).currentEditCrypto;
+  
+  // Store the initial asset in state so it survives StrictMode double-mounts
+  const [initialAsset] = useState<any>((window as any).currentEditCrypto);
+  const editMode = !!initialAsset;
 
   const [name, setName] = useState(initialAsset?.name || '');
   const [symbol, setSymbol] = useState(initialAsset?.symbol || '');
@@ -52,11 +54,10 @@ export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSucce
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    return () => {
-      delete (window as any).currentEditCrypto;
-    };
-  }, []);
+  const handleClose = () => {
+    delete (window as any).currentEditCrypto;
+    onClose();
+  };
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -138,7 +139,7 @@ export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSucce
     }
 
     if (onSuccess) onSuccess();
-    onClose();
+    handleClose();
   };
 
   return createPortal(
@@ -152,7 +153,7 @@ export const NewCryptoModal: React.FC<NewCryptoModalProps> = ({ onClose, onSucce
             </h3>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             id="new-crypto-close"
             className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
           >

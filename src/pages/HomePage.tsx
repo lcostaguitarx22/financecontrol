@@ -25,6 +25,7 @@ import { formatCurrency, formatDateBr } from '../utils/formatters';
 import { TabType } from '../types';
 import { DayDetailsModal, CalendarEvent } from '../components/modals/DayDetailsModal';
 import { toggleBillPaid } from '../services/storage';
+import { CryptoIcon } from '../components/CryptoIcon';
 
 interface HomePageProps {
   onNavigateTab: (tab: TabType) => void;
@@ -91,12 +92,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     '04': 5147.60,
     '05': 2301.93,
     '06': 966.27,
-    '07': 2131.35,
-    '08': 4067.58,
-    '09': 1909.16,
-    '10': 1645.95,
-    '11': 1051.51,
-    '12': 0
+    '07': 2131.35
   };
 
   const monthsNamesShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -313,7 +309,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     return acc + (shouldShow ? b.amount : 0);
   }, 0);
 
-  const budgetRestanteAtual = totalRendaAtual - projectedFixedBillsCurrent;
+  const paidFixedBillsCurrent = data.bills
+    .filter(b => b.fixedBillId && b.dueDate.startsWith(realCurrentYyyyMm) && b.status === 'pago')
+    .reduce((acc, b) => acc + b.amount, 0);
+
+  const unpaidNormalBillsCurrent = data.bills
+    .filter(b => !b.fixedBillId && b.dueDate.startsWith(realCurrentYyyyMm) && b.status !== 'pago')
+    .reduce((acc, b) => acc + b.amount, 0);
+
+  const contasPendentesAtual = Math.max(0, projectedFixedBillsCurrent - paidFixedBillsCurrent) + unpaidNormalBillsCurrent;
+
+  const budgetRestanteAtual = (totalRendaAtual + saldoCorrente) - contasPendentesAtual;
   const mesAtualNome = monthsNames[realCurrentMonthIndex];
 
   const nextMonthDate = new Date();
@@ -340,7 +346,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     return acc + (shouldShow ? b.amount : 0);
   }, 0);
 
-  const budgetRestanteProx = totalRendaProx - projectedFixedBills;
+  const nextMonthNormalBills = data.bills
+    .filter(b => !b.fixedBillId && b.dueDate.startsWith(nextMonthYyyyMm) && b.status !== 'pago')
+    .reduce((acc, b) => acc + b.amount, 0);
+
+  const contasPendentesProx = projectedFixedBills + nextMonthNormalBills;
+
+  const budgetRestanteProx = (totalRendaProx + budgetRestanteAtual) - contasPendentesProx;
   const mesSeguinteNome = monthsNames[nextMonthIndex];
 
   // ==========================================
@@ -522,8 +534,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaAtual + saldoCorrente, data.settings.currency)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
-              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBillsCurrent, data.settings.currency)}</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Pendentes</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesAtual, data.settings.currency)}</p>
             </div>
             <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
@@ -546,12 +558,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário previsto + Saldo anterior</p>
-              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx + saldoCorrente, data.settings.currency)}</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Previsto de {mesAtualNome}</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx + budgetRestanteAtual, data.settings.currency)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Fixas</p>
-              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Pendentes</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesProx, data.settings.currency)}</p>
             </div>
             <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
@@ -696,7 +708,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Gráfico Fatura do Cartão */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex flex-col">
-          <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">Fatura Bradesco ({currentYearIdx})</h3>
+          <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">Fatura de Cartões ({currentYearIdx})</h3>
           <div className="h-48 -ml-4 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={yearlyChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
@@ -792,9 +804,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
             sortedCryptos.map(crypto => (
               <div key={crypto.id} className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 last:border-0 last:pb-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[10px] text-slate-700 dark:text-slate-300">
-                    {crypto.symbol}
-                  </div>
+                  <CryptoIcon symbol={crypto.symbol} name={crypto.name} color={crypto.color} />
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-white">{crypto.name}</p>
                     <p className="text-[10px] text-slate-500">Saldo: {crypto.amount} {crypto.symbol}</p>

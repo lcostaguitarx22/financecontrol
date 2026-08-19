@@ -7,6 +7,7 @@ import { Currency } from '../types';
 import { NewCryptoModal } from '../components/modals/NewCryptoModal';
 import { CryptoWalletModal } from '../components/modals/CryptoWalletModal';
 import { deleteWallet } from '../services/storage';
+import { CryptoIcon, getCryptoIcon } from '../components/CryptoIcon';
 
 export const CryptoPage: React.FC = () => {
   const { data, livePrices } = useAppData();
@@ -232,12 +233,7 @@ export const CryptoPage: React.FC = () => {
                 return (
                   <div key={asset.id} className="group flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-xs shadow-xs shrink-0"
-                        style={{ backgroundColor: asset.color || '#3b82f6' }}
-                      >
-                        {asset.symbol.slice(0, 1)}
-                      </div>
+                      <CryptoIcon symbol={asset.symbol} name={asset.name} color={asset.color} />
                       <div>
                         <p className="text-sm font-bold text-slate-900 dark:text-white">
                           {asset.name}
@@ -313,12 +309,7 @@ export const CryptoPage: React.FC = () => {
               return (
                 <div key={asset.id} className="group flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-xs shadow-xs shrink-0"
-                      style={{ backgroundColor: asset.color || '#3b82f6' }}
-                    >
-                      {asset.symbol.slice(0, 1)}
-                    </div>
+                    <CryptoIcon symbol={asset.symbol} name={asset.name} color={asset.color} />
                     <div>
                       <p className="text-sm font-bold text-slate-900 dark:text-white">
                         {asset.name}

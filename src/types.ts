@@ -17,6 +17,7 @@ export interface Transaction {
   category: string;
   date: string; // ISO string or YYYY-MM-DD
   iconName?: string;
+  source?: string;
 }
 
 export interface CryptoAsset {

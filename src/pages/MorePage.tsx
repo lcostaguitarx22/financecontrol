@@ -39,7 +39,7 @@ import { useAppData } from '../hooks/useAppData';
 import { updateSettings } from '../services/storage';
 import { formatCurrency } from '../utils/formatters';
 import { CreditCard as CreditCardIcon } from 'lucide-react';
-import { CreditCard } from '../types';
+import { CreditCard, AppData, Currency, ThemeMode } from '../types';
 
 interface MorePageProps {
   onOpenRendimento: () => void;

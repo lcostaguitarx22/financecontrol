@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Trash2,
   Pencil,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ArrowRightLeft
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
@@ -26,6 +27,7 @@ import { formatCurrency, formatDateBr } from '../utils/formatters';
 import { deleteTransaction } from '../services/storage';
 import { NewTransactionModal } from '../components/modals/NewTransactionModal';
 import { BudgetLimitsModal } from '../components/modals/BudgetLimitsModal';
+import { OpenFinanceModal } from '../components/modals/OpenFinanceModal';
 import { FinanceBudget } from '../components/FinanceBudget';
 
 interface FinancePageProps {
@@ -37,6 +39,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
   const [activeTab, setActiveTab] = useState<'extrato' | 'orcamento'>('extrato');
   const [showNewTxModal, setShowNewTxModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [showOpenFinanceModal, setShowOpenFinanceModal] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('todas');
 
   // Calcular totais
@@ -203,6 +206,12 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
 
           {/* Botões de Ação Superior */}
           <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setShowOpenFinanceModal(true)}
+              className="col-span-2 py-3 px-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 hover:opacity-90 shadow-md transition-opacity"
+            >
+              <ArrowRightLeft className="w-4 h-4" /> Conectar Banco (Simulação)
+            </button>
             <button
               onClick={onOpenReport}
               id="finance-report-btn"
@@ -449,6 +458,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
 
           {showNewTxModal && <NewTransactionModal onClose={() => setShowNewTxModal(false)} />}
           {showBudgetModal && <BudgetLimitsModal onClose={() => setShowBudgetModal(false)} />}
+          {showOpenFinanceModal && <OpenFinanceModal onClose={() => setShowOpenFinanceModal(false)} />}
         </>
       )}
     </div>
