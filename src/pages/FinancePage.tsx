@@ -73,15 +73,43 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
 
   const saldoMes = totalReceitas - totalDespesas;
 
-  // Cálculo de Previsão Próximo Mês
-  const nextMonthD = new Date();
-  nextMonthD.setMonth(nextMonthD.getMonth() + 1);
-  const nextMonthKey = `${nextMonthD.getFullYear()}-${String(nextMonthD.getMonth() + 1).padStart(2, '0')}`;
-
   const knownSalaries = Object.entries(data.monthlySalaries || {})
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(e => e[1]);
   const lastKnownSalary = knownSalaries.length > 0 ? knownSalaries[knownSalaries.length - 1] : (data.salary || 0);
+  const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  // Cálculo de Previsão Mês Atual
+  const currentMonthSalary = data.monthlySalaries?.[currentMonthKey] ?? lastKnownSalary;
+  const currentMonthExtra = data.monthlyExtras?.[currentMonthKey] ?? 0;
+  const previsaoReceitasAtual = currentMonthSalary + currentMonthExtra;
+  
+  const previsaoDespesasAtual = (data.fixedBills || []).reduce((acc, b) => {
+    const bRecurrence = b.recurrence || 'mensal';
+    const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+    if (!bMonthKey) return acc + b.amount;
+    if (bRecurrence === 'unico') {
+      return bMonthKey === currentMonthKey ? acc + b.amount : acc;
+    }
+    return bMonthKey <= currentMonthKey ? acc + b.amount : acc;
+  }, 0);
+
+  const paidFixedBillsCurrent = data.bills
+    .filter(b => b.fixedBillId && b.dueDate.startsWith(currentMonthKey) && b.status === 'pago')
+    .reduce((acc, b) => acc + b.amount, 0);
+
+  const unpaidNormalBillsCurrent = data.bills
+    .filter(b => !b.fixedBillId && b.dueDate.startsWith(currentMonthKey) && b.status !== 'pago')
+    .reduce((acc, b) => acc + b.amount, 0);
+
+  const contasPendentesAtual = Math.max(0, previsaoDespesasAtual - paidFixedBillsCurrent) + unpaidNormalBillsCurrent;
+
+  const currentMonthName = monthsNames[currMonth - 1];
+
+  // Cálculo de Previsão Próximo Mês
+  const nextMonthD = new Date();
+  nextMonthD.setMonth(nextMonthD.getMonth() + 1);
+  const nextMonthKey = `${nextMonthD.getFullYear()}-${String(nextMonthD.getMonth() + 1).padStart(2, '0')}`;
 
   const nextMonthSalary = data.monthlySalaries?.[nextMonthKey] ?? lastKnownSalary;
   const nextMonthExtra = data.monthlyExtras?.[nextMonthKey] ?? 0;
@@ -98,7 +126,12 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
     return bMonthKey <= nextMonthKey ? acc + b.amount : acc;
   }, 0);
 
-  const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const nextMonthNormalBills = data.bills
+    .filter(b => !b.fixedBillId && b.dueDate.startsWith(nextMonthKey) && b.status !== 'pago')
+    .reduce((acc, b) => acc + b.amount, 0);
+
+  const contasPendentesProx = previsaoDespesas + nextMonthNormalBills;
+
   const nextMonthName = monthsNames[nextMonthD.getMonth()];
 
   // Filtrar transações
@@ -259,32 +292,75 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
                 <ArrowDownRight className="w-5 h-5 stroke-[2.5px]" />
               </div>
             </div>
-            {/* Previsão Próximo Mês */}
-            <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-3">
-                Orçamento Previsto (Próximo Mês) - {nextMonthName}
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[10px] text-slate-400 font-semibold mb-1">RECEITAS</p>
-                  <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
-                    {formatCurrency(previsaoReceitas, data.settings.currency)}
-                  </p>
+            {/* Previsão Mês Atual e Próximo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Previsão Mês Atual */}
+              <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-3">
+                  Orçamento Previsto ({currentMonthName})
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold mb-1">SALÁRIO PREVISTO</p>
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                      {formatCurrency(previsaoReceitasAtual, data.settings.currency)}
+                    </p>
 
-                  <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUMULADO</p>
-                  <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
-                    {formatCurrency(saldoMes + previsaoReceitas, data.settings.currency)}
-                  </p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUMULADO</p>
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                      {formatCurrency(saldoMes + previsaoReceitasAtual, data.settings.currency)}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUM. COM DESCONTO</p>
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400" title="Receitas + Acumulado - Contas Pendentes">
+                      {formatCurrency(previsaoReceitasAtual + saldoMes - contasPendentesAtual, data.settings.currency)}
+                    </p>
+
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold mb-1">DESPESAS FIXAS</p>
+                    <p className="text-sm font-extrabold text-pink-600 dark:text-pink-400">
+                      {formatCurrency(previsaoDespesasAtual, data.settings.currency)}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">DESPESAS PENDENTES</p>
+                    <p className="text-sm font-extrabold text-pink-500 dark:text-pink-300">
+                      {formatCurrency(contasPendentesAtual, data.settings.currency)}
+                    </p>                    
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-semibold mb-1">DESPESAS FIXAS</p>
-                  <p className="text-sm font-extrabold text-pink-600 dark:text-pink-400">
-                    {formatCurrency(previsaoDespesas, data.settings.currency)}
-                  </p>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ATUAL COM DESCONTO</p>
-                  <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
-                    {formatCurrency(saldoMes - previsaoDespesas, data.settings.currency)}
-                  </p>
+              </div>
+
+              {/* Previsão Próximo Mês */}
+              <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-3">
+                  Orçamento Previsto ({nextMonthName})
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold mb-1">SALÁRIO PREVISTO</p>
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                      {formatCurrency(previsaoReceitas, data.settings.currency)}
+                    </p>
+
+                    <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUMULADO</p>
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400" title="Saldo projetado após descontos do mês anterior">
+                      {formatCurrency(previsaoReceitasAtual + saldoMes + previsaoReceitas - contasPendentesAtual , data.settings.currency)}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUM. COM DESCONTO</p>
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400" title="Receitas + Acumulado - Contas Pendentes">
+                      {formatCurrency(previsaoReceitas + (previsaoReceitasAtual + saldoMes - contasPendentesAtual) - contasPendentesProx, data.settings.currency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold mb-1">DESPESAS FIXAS</p>
+                    <p className="text-sm font-extrabold text-pink-600 dark:text-pink-400">
+                      {formatCurrency(previsaoDespesas, data.settings.currency)}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">DESPESAS PENDENTES</p>
+                    <p className="text-sm font-extrabold text-pink-500 dark:text-pink-300">
+                      {formatCurrency(contasPendentesProx, data.settings.currency)}
+                    </p>
+                    
+                  </div>
                 </div>
               </div>
             </div>

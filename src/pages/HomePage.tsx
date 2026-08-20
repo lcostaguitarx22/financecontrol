@@ -67,13 +67,53 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const currentMonthYyyyMm = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
-  const faturaCartao = data.bills
+  const getVirtualFixedBills = (yyyyMm: string) => {
+    const virtualBills: any[] = [];
+    (data.fixedBills || []).forEach(b => {
+      const bRecurrence = b.recurrence || 'mensal';
+      const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+      let shouldShow = true;
+      if (bMonthKey) {
+        if (bRecurrence === 'unico') {
+          shouldShow = bMonthKey === yyyyMm;
+        } else {
+          shouldShow = bMonthKey <= yyyyMm;
+        }
+      }
+      if (shouldShow && b.dueDate) {
+        const alreadyGenerated = data.bills.some(realBill => realBill.fixedBillId === b.id && realBill.dueDate.startsWith(yyyyMm));
+        if (!alreadyGenerated) {
+          const fakeDueDate = `${yyyyMm}-${b.dueDate.split('-')[2]}`;
+          virtualBills.push({
+            id: `virtual-${b.id}-${yyyyMm}`,
+            title: b.name,
+            amount: b.amount,
+            dueDate: fakeDueDate,
+            status: 'pendente',
+            iconName: b.icon || 'Home',
+            fixedBillId: b.id,
+            isVirtual: true,
+            originalBill: b
+          });
+        }
+      }
+    });
+    return virtualBills;
+  };
+
+  const nextMonthD = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+  const nextMonthKey = `${nextMonthD.getFullYear()}-${String(nextMonthD.getMonth() + 1).padStart(2, '0')}`;
+  
+  const allVirtuals = [...getVirtualFixedBills(currentMonthYyyyMm), ...getVirtualFixedBills(nextMonthKey)];
+  const allBills = [...data.bills, ...allVirtuals];
+
+  const faturaCartao = allBills
     .filter((b) => b.paymentMethod === 'cartao' && b.status !== 'pago' && b.dueDate?.startsWith(currentMonthYyyyMm))
     .reduce((acc, b) => acc + b.amount, 0);
 
   const saldoGeral = saldoCorrente + saldoCripto;
 
-  const pendingBills = data.bills.filter((b) => b.status !== 'pago');
+  const pendingBills = allBills.filter((b) => b.status !== 'pago');
   const billsTotal = pendingBills.reduce((acc, b) => acc + b.amount, 0);
 
   const cashFlowData = (receitasMes === 0 && despesasMes === 0)
@@ -621,7 +661,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               <div
                 key={day}
                 onClick={() => handleDayClick(day)}
-                className={`py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${isToday
+                className={`group relative py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${isToday
                   ? 'bg-indigo-600 text-white font-bold shadow-md'
                   : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                   }`}
@@ -631,6 +671,25 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
                   {hasRenda && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-emerald-500'}`} />}
                   {hasDebito && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-300' : 'bg-rose-500'}`} />}
                 </div>
+
+                {/* Tooltip de eventos */}
+                {events.length > 0 && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col w-48 p-2 bg-slate-800 dark:bg-slate-900 text-white rounded-lg shadow-xl z-50 text-left pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity border border-slate-700">
+                    <p className="text-[10px] font-bold text-slate-300 border-b border-slate-700 pb-1 mb-1">{day} de {monthName}</p>
+                    <div className="flex flex-col gap-1 max-h-32 overflow-y-auto custom-scrollbar">
+                      {events.map((e, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-[10px]">
+                          <span className="truncate pr-2 flex-1">{e.title}</span>
+                          <span className={`font-bold ${e.type === 'renda' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {e.type === 'renda' ? '+' : '-'}{formatCurrency(e.amount, data.settings.currency)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Seta do tooltip */}
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 dark:bg-slate-900 border-b border-r border-slate-700 rotate-45" />
+                  </div>
+                )}
               </div>
             );
           })}

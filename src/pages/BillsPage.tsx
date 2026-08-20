@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency, formatDateBr } from '../utils/formatters';
-import { toggleBillPaid, deleteBill } from '../services/storage';
+import { toggleBillPaid, deleteBill, addBill } from '../services/storage';
 import { NewBillModal } from '../components/modals/NewBillModal';
 import { DayDetailsModal, CalendarEvent } from '../components/modals/DayDetailsModal';
 
@@ -114,17 +114,63 @@ export const BillsPage: React.FC = () => {
     setSelectedDay({ date: dateStr, events });
   };
 
-  // Totais reais calculados com base em data.bills
-  const totalBills = data.bills.reduce((acc, b) => acc + b.amount, 0);
-  const totalPending = data.bills
+  const getVirtualFixedBills = (yyyyMm: string) => {
+    const virtualBills: any[] = [];
+    (data.fixedBills || []).forEach(b => {
+      const bRecurrence = b.recurrence || 'mensal';
+      const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+      let shouldShow = true;
+      if (bMonthKey) {
+        if (bRecurrence === 'unico') {
+          shouldShow = bMonthKey === yyyyMm;
+        } else {
+          shouldShow = bMonthKey <= yyyyMm;
+        }
+      }
+      if (shouldShow && b.dueDate) {
+        const alreadyGenerated = data.bills.some(realBill => realBill.fixedBillId === b.id && realBill.dueDate.startsWith(yyyyMm));
+        if (!alreadyGenerated) {
+          const fakeDueDate = `${yyyyMm}-${b.dueDate.split('-')[2]}`;
+          virtualBills.push({
+            id: `virtual-${b.id}-${yyyyMm}`,
+            title: b.name,
+            amount: b.amount,
+            dueDate: fakeDueDate,
+            status: 'pendente',
+            iconName: b.icon || 'Home',
+            fixedBillId: b.id,
+            isVirtual: true,
+            originalBill: b
+          });
+        }
+      }
+    });
+    return virtualBills;
+  };
+
+  const actualCurrentYyyyMm = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const nextMonthD = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const nextMonthKey = `${nextMonthD.getFullYear()}-${String(nextMonthD.getMonth() + 1).padStart(2, '0')}`;
+  
+  const uniqueMonths = Array.from(new Set([actualCurrentYyyyMm, nextMonthKey, currentYyyyMm]));
+  const virtualBills = uniqueMonths.flatMap(m => getVirtualFixedBills(m));
+
+  const allBills = [
+    ...data.bills, 
+    ...virtualBills
+  ].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
+  // Totais reais calculados com base em allBills
+  const totalBills = allBills.reduce((acc, b) => acc + b.amount, 0);
+  const totalPending = allBills
     .filter((b) => b.status !== 'pago')
     .reduce((acc, b) => acc + b.amount, 0);
-  const totalPaid = data.bills
+  const totalPaid = allBills
     .filter((b) => b.status === 'pago')
     .reduce((acc, b) => acc + b.amount, 0);
 
   // Lista filtrada
-  const filteredBills = data.bills.filter((b) => {
+  const filteredBills = allBills.filter((b) => {
     if (filter === 'Pendentes') return b.status !== 'pago';
     return true;
   });
@@ -166,7 +212,7 @@ export const BillsPage: React.FC = () => {
     );
   };
 
-  const pendingBills = data.bills.filter(b => b.status !== 'pago');
+  const pendingBills = allBills.filter(b => b.status !== 'pago');
   const nextBill = pendingBills.length > 0 ? [...pendingBills].sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0] : null;
 
   return (
@@ -225,7 +271,7 @@ export const BillsPage: React.FC = () => {
                 <div
                   key={day}
                   onClick={() => handleDayClick(day)}
-                  className={`py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${isToday
+                  className={`group relative py-1.5 rounded-lg text-xs cursor-pointer flex flex-col items-center justify-center transition-all ${isToday
                       ? 'bg-indigo-600 text-white font-bold shadow-md'
                       : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                     }`}
@@ -235,6 +281,25 @@ export const BillsPage: React.FC = () => {
                     {hasRenda && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-emerald-500'}`} />}
                     {hasDebito && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-300' : 'bg-rose-500'}`} />}
                   </div>
+
+                  {/* Tooltip de eventos */}
+                  {events.length > 0 && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col w-48 p-2 bg-slate-800 dark:bg-slate-900 text-white rounded-lg shadow-xl z-50 text-left pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity border border-slate-700">
+                      <p className="text-[10px] font-bold text-slate-300 border-b border-slate-700 pb-1 mb-1">{day} de {monthName}</p>
+                      <div className="flex flex-col gap-1 max-h-32 overflow-y-auto custom-scrollbar">
+                        {events.map((e, idx) => (
+                          <div key={idx} className="flex justify-between items-center text-[10px]">
+                            <span className="truncate pr-2 flex-1">{e.title}</span>
+                            <span className={`font-bold ${e.type === 'renda' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {e.type === 'renda' ? '+' : '-'}{formatCurrency(e.amount, data.settings.currency)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Seta do tooltip */}
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 dark:bg-slate-900 border-b border-r border-slate-700 rotate-45" />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -298,7 +363,22 @@ export const BillsPage: React.FC = () => {
             Lembre-se do pagamento de <strong className="text-white">{nextBill.title}</strong> programado para {nextBill.dueDate}.
           </p>
           <button
-            onClick={() => toggleBillPaid(nextBill.id).then(() => reloadData())}
+            onClick={() => {
+              if ((nextBill as any).isVirtual) {
+                addBill({
+                  title: (nextBill as any).originalBill.name,
+                  amount: (nextBill as any).originalBill.amount,
+                  dueDate: nextBill.dueDate,
+                  status: 'pendente',
+                  iconName: (nextBill as any).originalBill.icon || 'Home',
+                  fixedBillId: (nextBill as any).originalBill.id
+                }).then(nb => {
+                  toggleBillPaid(nb.id).then(() => reloadData());
+                });
+              } else {
+                toggleBillPaid(nextBill.id).then(() => reloadData());
+              }
+            }}
             className="w-full py-2.5 bg-pink-500 hover:bg-pink-400 text-white font-bold rounded-2xl text-xs transition-all shadow-md shadow-pink-500/30"
           >
             Marcar como Pago
@@ -355,6 +435,10 @@ export const BillsPage: React.FC = () => {
                       <span className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 flex items-center gap-2 transition-opacity">
                         <button
                           onClick={() => {
+                            if ((bill as any).isVirtual) {
+                                alert('Contas fixas devem ser editadas na aba Mais > Contas Fixas.');
+                                return;
+                            }
                             (window as any).currentEditBill = bill;
                             setShowNewBillModal(true);
                           }}
@@ -364,6 +448,10 @@ export const BillsPage: React.FC = () => {
                         </button>
                         <button
                           onClick={() => {
+                            if ((bill as any).isVirtual) {
+                                alert('Contas fixas devem ser excluídas na aba Mais > Contas Fixas.');
+                                return;
+                            }
                             if (window.confirm('Tem certeza que deseja excluir esta conta?')) {
                               deleteBill(bill.id).then(() => reloadData());
                             }
@@ -388,7 +476,22 @@ export const BillsPage: React.FC = () => {
                     {formatCurrency(bill.amount, data.settings.currency)}
                   </span>
                   <button
-                    onClick={() => toggleBillPaid(bill.id).then(() => reloadData())}
+                    onClick={() => {
+                      if ((bill as any).isVirtual) {
+                        addBill({
+                          title: (bill as any).originalBill.name,
+                          amount: (bill as any).originalBill.amount,
+                          dueDate: bill.dueDate,
+                          status: 'pendente',
+                          iconName: (bill as any).originalBill.icon || 'Home',
+                          fixedBillId: (bill as any).originalBill.id
+                        }).then(nb => {
+                          toggleBillPaid(nb.id).then(() => reloadData());
+                        });
+                      } else {
+                        toggleBillPaid(bill.id).then(() => reloadData());
+                      }
+                    }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${bill.status === 'pago'
                       ? 'bg-emerald-600 text-white'
                       : 'border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500'
