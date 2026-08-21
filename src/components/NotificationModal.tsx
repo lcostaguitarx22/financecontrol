@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertTriangle, Bell, CheckCircle2, TrendingUp, Calendar } from 'lucide-react';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency, getDaysUntilDue } from '../utils/formatters';
@@ -34,8 +35,8 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ onClose })
 
   const highBudgets = data.budgets.filter((bg) => bg.usedPercentage >= 80);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 font-sans">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
@@ -145,6 +146,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ onClose })
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
