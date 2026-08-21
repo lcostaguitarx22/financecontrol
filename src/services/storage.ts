@@ -184,6 +184,32 @@ export async function addRendimento(entry: Omit<RendimentoEntry, 'id'>): Promise
   return newEntry;
 }
 
+export async function updateRendimento(id: string, update: Partial<Omit<RendimentoEntry, 'id'>>): Promise<void> {
+  const data = await getAppData();
+  let amountDiff = 0;
+  data.rendimentos = data.rendimentos.map(r => {
+    if (r.id === id) {
+      if (update.amount !== undefined) {
+        amountDiff = update.amount - r.amount;
+      }
+      return { ...r, ...update };
+    }
+    return r;
+  });
+  data.totalAccumulatedYield += amountDiff;
+  await saveAppData(data);
+}
+
+export async function deleteRendimento(id: string): Promise<void> {
+  const data = await getAppData();
+  const target = data.rendimentos.find(r => r.id === id);
+  if (target) {
+    data.totalAccumulatedYield -= target.amount;
+  }
+  data.rendimentos = data.rendimentos.filter(r => r.id !== id);
+  await saveAppData(data);
+}
+
 export async function updateSettings(partialSettings: Partial<AppData['settings']>): Promise<void> {
   const data = await getAppData();
   data.settings = { ...data.settings, ...partialSettings };

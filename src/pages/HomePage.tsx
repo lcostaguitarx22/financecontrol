@@ -56,9 +56,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     .filter((t) => t.type === 'despesa' && isThisMonth(t.date))
     .reduce((acc, t) => acc + t.amount, 0);
 
+  const totalRendimentos = data.rendimentos.reduce((acc, r) => acc + r.amount, 0);
+
   const saldoCorrente = data.transactions.reduce((acc, t) => {
     return t.type === 'receita' ? acc + t.amount : acc - t.amount;
-  }, 0);
+  }, 0) + totalRendimentos;
 
   const saldoCripto = data.cryptos.reduce((acc, c) => {
     const livePrice = livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
@@ -431,7 +433,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   // ==========================================
   // 5. TRANSAÇÕES RECENTES (Até 8)
   // ==========================================
-  const recentTransactions = data.transactions.slice(0, 8);
+  const allRecentItems = [
+    ...data.transactions,
+    ...data.rendimentos.map(r => ({
+      id: r.id,
+      description: r.type ? `Rendimento (${r.type})` : 'Rendimento',
+      amount: r.amount,
+      date: r.date,
+      type: 'receita' as const,
+      category: 'Rendimento',
+    }))
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
+
+  const recentTransactions = allRecentItems;
 
   // ==========================================
   // 6. VARIAÇÃO DE CRIPTO

@@ -89,6 +89,7 @@ export interface RendimentoEntry {
   amount: number;
   variationPercentage?: number;
   label: string; // "Hoje", "Ontem", "Domingo", etc.
+  type?: string; // 'Cofrinho', 'Saldo em conta', 'Emergência', 'Outros'
 }
 
 export interface AppSettings {

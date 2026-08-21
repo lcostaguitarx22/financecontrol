@@ -7,11 +7,13 @@ import React, { useState } from 'react';
 import {
   ArrowLeft,
   Calendar,
+  Trash2,
+  Edit2,
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
 import { formatCurrency } from '../utils/formatters';
-import { addRendimento } from '../services/storage';
+import { addRendimento, updateRendimento, deleteRendimento } from '../services/storage';
 
 interface RendimentoPageProps {
   onBack: () => void;
@@ -21,6 +23,8 @@ export const RendimentoPage: React.FC<RendimentoPageProps> = ({ onBack }) => {
   const { data } = useAppData();
   const [dailyValue, setDailyValue] = useState('');
   const [dateVal, setDateVal] = useState(new Date().toISOString().split('T')[0]);
+  const [typeVal, setTypeVal] = useState('Outros');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const totalAcumulado = data.totalAccumulatedYield || 0;
 
@@ -37,14 +41,38 @@ export const RendimentoPage: React.FC<RendimentoPageProps> = ({ onBack }) => {
       return;
     }
 
-    addRendimento({
-      amount: parsed,
-      date: dateVal,
-      label: 'Registro',
-      variationPercentage: 0,
-    });
+    if (editingId) {
+      updateRendimento(editingId, {
+        amount: parsed,
+        date: dateVal,
+        type: typeVal,
+      });
+      setEditingId(null);
+    } else {
+      addRendimento({
+        amount: parsed,
+        date: dateVal,
+        label: 'Registro',
+        type: typeVal,
+        variationPercentage: 0,
+      });
+    }
 
     setDailyValue('');
+    setTypeVal('Outros');
+  };
+
+  const handleEdit = (r: any) => {
+    setEditingId(r.id);
+    setDailyValue(r.amount.toString());
+    setDateVal(r.date);
+    setTypeVal(r.type || 'Outros');
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este rendimento?')) {
+      deleteRendimento(id);
+    }
   };
 
   return (
@@ -118,7 +146,7 @@ export const RendimentoPage: React.FC<RendimentoPageProps> = ({ onBack }) => {
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
         <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">
-          Nova Entrada
+          {editingId ? 'Editar Rendimento' : 'Nova Entrada'}
         </h3>
 
         <form onSubmit={handleAddYield} className="space-y-4">
@@ -150,13 +178,44 @@ export const RendimentoPage: React.FC<RendimentoPageProps> = ({ onBack }) => {
             />
           </div>
 
-          <button
-            type="submit"
-            id="add-rendimento-submit"
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl text-xs transition-all shadow-md shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2"
-          >
-            Adicionar Rendimento
-          </button>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Tipo
+            </label>
+            <select
+              value={typeVal}
+              onChange={(e) => setTypeVal(e.target.value)}
+              className="w-full px-4 py-3 bg-indigo-50/40 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="Cofrinho">Cofrinho</option>
+              <option value="Saldo em conta">Saldo em conta</option>
+              <option value="Emergência">Emergência</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              id="add-rendimento-submit"
+              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl text-xs transition-all shadow-md shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2"
+            >
+              {editingId ? 'Atualizar' : 'Adicionar'}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setDailyValue('');
+                  setTypeVal('Outros');
+                }}
+                className="w-1/3 py-3.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 font-extrabold rounded-2xl text-xs transition-all"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -179,17 +238,26 @@ export const RendimentoPage: React.FC<RendimentoPageProps> = ({ onBack }) => {
                     <Calendar className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">
-                      {item.label}
+                    <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      {item.label} 
+                      {item.type && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">{item.type}</span>}
                     </p>
                     <p className="text-[11px] text-slate-400">{item.date}</p>
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="flex items-center gap-3 text-right">
                   <p className="text-sm font-bold text-slate-900 dark:text-white">
                     {formatCurrency(item.amount, data.settings.currency)}
                   </p>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEdit(item)} className="p-1.5 text-slate-400 hover:text-indigo-500 transition-colors">
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
