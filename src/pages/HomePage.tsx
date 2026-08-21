@@ -395,6 +395,39 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   const budgetRestanteProx = (totalRendaProx + budgetRestanteAtual) - contasPendentesProx;
   const mesSeguinteNome = monthsNames[nextMonthIndex];
 
+  const anotherMonthDate = new Date();
+  anotherMonthDate.setMonth(today.getMonth() + 2);
+  const anotherMonthYear = anotherMonthDate.getFullYear();
+  const anotherMonthIndex = anotherMonthDate.getMonth();
+  const anotherMonthYyyyMm = `${anotherMonthYear}-${String(anotherMonthIndex + 1).padStart(2, '0')}`;
+
+  const expectedSalaryAnotherMonth = data.monthlySalaries?.[anotherMonthYyyyMm] ?? data.salary ?? 0;
+  const expectedExtrasAnotherMonth = data.monthlyExtras?.[anotherMonthYyyyMm] ?? 0;
+  const totalRendaOutro = expectedSalaryAnotherMonth + expectedExtrasAnotherMonth;
+
+  const projectedFixedBillsAnother = (data.fixedBills || []).reduce((acc, b) => {
+    const bRecurrence = b.recurrence || 'mensal';
+    const bMonthKey = b.dueDate ? b.dueDate.substring(0, 7) : '';
+    let shouldShow = true;
+    if (bMonthKey) {
+      if (bRecurrence === 'unico') {
+        shouldShow = bMonthKey === anotherMonthYyyyMm;
+      } else {
+        shouldShow = bMonthKey <= anotherMonthYyyyMm;
+      }
+    }
+    return acc + (shouldShow ? b.amount : 0);
+  }, 0);
+
+  const anotherMonthNormalBills = data.bills
+    .filter(b => !b.fixedBillId && b.dueDate.startsWith(anotherMonthYyyyMm) && b.status !== 'pago')
+    .reduce((acc, b) => acc + b.amount, 0);
+
+  const contasPendentesOutro = projectedFixedBillsAnother + anotherMonthNormalBills;
+
+  const budgetRestanteOutro = (totalRendaOutro + budgetRestanteProx) - contasPendentesOutro;
+  const mesOutroNome = monthsNames[anotherMonthIndex];
+
   // ==========================================
   // 5. TRANSAÇÕES RECENTES (Até 8)
   // ==========================================
@@ -609,6 +642,34 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
               <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {formatCurrency(budgetRestanteProx, data.settings.currency)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4c. ORÇAMENTO PREVISTO (Mês Subsequente) */}
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-5 shadow-sm text-white">
+          <div className="flex items-center gap-2 mb-4">
+            <Wallet className="w-4 h-4 text-emerald-400" />
+            <h3 className="font-bold text-sm">Orçamento Previsto ({mesOutroNome})</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário Previsto</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaOutro, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Previsto de {mesSeguinteNome}</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaOutro + budgetRestanteProx, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Pendentes</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesOutro, data.settings.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+              <p className={`text-sm font-bold mt-1 ${budgetRestanteOutro >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {formatCurrency(budgetRestanteOutro, data.settings.currency)}
               </p>
             </div>
           </div>
