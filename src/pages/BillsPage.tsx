@@ -370,6 +370,7 @@ export const BillsPage: React.FC = () => {
                   amount: (nextBill as any).originalBill.amount,
                   dueDate: nextBill.dueDate,
                   status: 'pendente',
+                  category: (nextBill as any).originalBill.category || 'Outros',
                   iconName: (nextBill as any).originalBill.icon || 'Home',
                   fixedBillId: (nextBill as any).originalBill.id
                 }).then(nb => {
@@ -483,6 +484,7 @@ export const BillsPage: React.FC = () => {
                           amount: (bill as any).originalBill.amount,
                           dueDate: bill.dueDate,
                           status: 'pendente',
+                          category: (bill as any).originalBill.category || 'Outros',
                           iconName: (bill as any).originalBill.icon || 'Home',
                           fixedBillId: (bill as any).originalBill.id
                         }).then(nb => {
