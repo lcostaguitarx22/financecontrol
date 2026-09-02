@@ -42,8 +42,10 @@ export const BillsPage: React.FC = () => {
   const currentMonth = calendarDate.getMonth();
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-  const paymentDay = Math.min(30, daysInMonth);
   const currentYyyyMm = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  
+  const customSalaryDateStr = data.monthlySalaryDates?.[currentYyyyMm];
+  const paymentDay = customSalaryDateStr ? parseInt(customSalaryDateStr.split('-')[2], 10) : Math.min(30, daysInMonth);
 
   const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const monthName = monthsNames[currentMonth];

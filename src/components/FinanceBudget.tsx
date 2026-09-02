@@ -17,6 +17,9 @@ export const FinanceBudget: React.FC = () => {
   const currentSalary = data.monthlySalaries?.[selectedMonth] ?? (data.salary || 0);
   const [isEditingSalary, setIsEditingSalary] = useState(false);
   const [tempSalary, setTempSalary] = useState(currentSalary.toString());
+  
+  const currentSalaryDate = data.monthlySalaryDates?.[selectedMonth] || '';
+  const [tempSalaryDate, setTempSalaryDate] = useState(currentSalaryDate);
 
   const currentExtra = data.monthlyExtras?.[selectedMonth] ?? 0;
   const [isEditingExtra, setIsEditingExtra] = useState(false);
@@ -70,7 +73,9 @@ export const FinanceBudget: React.FC = () => {
     setSelectedMonth(val);
     const sal = data.monthlySalaries?.[val] ?? (data.salary || 0);
     const extr = data.monthlyExtras?.[val] ?? 0;
+    const salDate = data.monthlySalaryDates?.[val] || '';
     setTempSalary(sal.toString());
+    setTempSalaryDate(salDate);
     setTempExtra(extr.toString());
     setIsEditingSalary(false);
     setIsEditingExtra(false);
@@ -84,6 +89,10 @@ export const FinanceBudget: React.FC = () => {
         monthlySalaries: {
           ...(prev.monthlySalaries || {}),
           [selectedMonth]: val
+        },
+        monthlySalaryDates: {
+          ...(prev.monthlySalaryDates || {}),
+          [selectedMonth]: tempSalaryDate
         }
       }));
     }
@@ -328,13 +337,20 @@ export const FinanceBudget: React.FC = () => {
                 type="number"
                 value={tempSalary}
                 onChange={(e) => setTempSalary(e.target.value)}
-                className="bg-white/20 border border-white/30 rounded-xl px-3 py-1.5 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 w-28 font-bold"
+                className="bg-white/20 border border-white/30 rounded-xl px-3 py-1.5 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 w-28 font-bold text-xs"
                 placeholder="Valor"
                 autoFocus
               />
+              <input
+                type="date"
+                value={tempSalaryDate}
+                onChange={(e) => setTempSalaryDate(e.target.value)}
+                className="bg-white/20 border border-white/30 rounded-xl px-2 py-1.5 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-xs font-bold [&::-webkit-calendar-picker-indicator]:invert"
+                title="Data Prevista"
+              />
               <button
                 onClick={handleSaveSalary}
-                className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
+                className="p-1.5 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
               >
                 <Save className="w-4 h-4" />
               </button>
@@ -344,13 +360,19 @@ export const FinanceBudget: React.FC = () => {
               <p className="text-xl sm:text-2xl font-extrabold tracking-tight">
                 {formatCurrency(currentSalary, data.settings.currency)}
               </p>
+              {currentSalaryDate && (
+                <span className="text-[10px] bg-white/10 border border-white/20 text-indigo-100 px-2 py-0.5 rounded-lg flex items-center gap-1 font-semibold">
+                  Previsto: {currentSalaryDate.split('-').reverse().join('/')}
+                </span>
+              )}
               <button
                 onClick={() => {
                   setTempSalary(currentSalary.toString());
+                  setTempSalaryDate(currentSalaryDate);
                   setIsEditingSalary(true);
                 }}
                 className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                title="Editar previsão de salário"
+                title="Editar previsão de salário e data"
               >
                 <Edit3 className="w-3.5 h-3.5" />
               </button>

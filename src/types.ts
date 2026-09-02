@@ -112,6 +112,7 @@ export interface AppData {
   fixedBills: FixedBill[];
   creditCards?: CreditCard[];
   monthlySalaries?: Record<string, number>; // ex: { "2026-08": 5000, "2026-09": 5200 }
+  monthlySalaryDates?: Record<string, string>; // ex: { "2026-08": "2026-08-05" }
   monthlyExtras?: Record<string, number>;
   salary?: number; // Deprecated, keep for backward compatibility temporarily
   rendimentos: RendimentoEntry[];
