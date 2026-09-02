@@ -48,6 +48,8 @@ export const BillsPage: React.FC = () => {
   const monthsNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const monthName = monthsNames[currentMonth];
 
+  const isSalaryReceived = data.transactions.some(t => t.source === 'salario' && t.date.startsWith(currentYyyyMm));
+
   const handlePrevMonth = () => {
     setCalendarDate(new Date(currentYear, currentMonth - 1, 1));
   };
@@ -98,7 +100,7 @@ export const BillsPage: React.FC = () => {
     });
 
     // Salário (apenas no paymentDay)
-    if (day === paymentDay) {
+    if (day === paymentDay && !isSalaryReceived) {
       const sal = data.monthlySalaries?.[currentYyyyMm] ?? data.salary;
       if (sal && sal > 0) {
         events.push({ id: 'salary-' + currentYyyyMm, title: 'Salário Mensal Fixo', amount: sal, type: 'renda', source: 'salario' });
@@ -206,7 +208,7 @@ export const BillsPage: React.FC = () => {
       );
     }
     return (
-      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/80 dark:text-amber-300 px-2 py-0.5 rounded-md">
+      <span className="text-[10px] font-bold text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300 px-2 py-0.5 rounded-md">
         PENDENTE
       </span>
     );
@@ -264,8 +266,9 @@ export const BillsPage: React.FC = () => {
               const day = i + 1;
               const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
               const events = getEventsForDay(day);
-              const hasDebito = events.some(e => e.type === 'debito');
-              const hasRenda = events.some(e => e.type === 'renda');
+              const hasAmarelo = events.some(e => e.source === 'conta_fixa' || e.source === 'salario');
+              const hasVermelho = events.some(e => e.status === 'pendente' || e.status === 'atrasado');
+              const hasVerde = events.some(e => e.status === 'pago' || e.source === 'transacao');
 
               return (
                 <div
@@ -278,8 +281,9 @@ export const BillsPage: React.FC = () => {
                 >
                   <span>{day}</span>
                   <div className="flex items-center gap-0.5 mt-0.5 h-1">
-                    {hasRenda && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-emerald-500'}`} />}
-                    {hasDebito && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-300' : 'bg-rose-500'}`} />}
+                    {hasVerde && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-emerald-300' : 'bg-emerald-500'}`} />}
+                    {hasAmarelo && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-amber-200' : 'bg-amber-400'}`} />}
+                    {hasVermelho && <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-rose-300' : 'bg-rose-500'}`} />}
                   </div>
 
                   {/* Tooltip de eventos */}
@@ -287,14 +291,21 @@ export const BillsPage: React.FC = () => {
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col w-48 p-2 bg-slate-800 dark:bg-slate-900 text-white rounded-lg shadow-xl z-50 text-left pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity border border-slate-700">
                       <p className="text-[10px] font-bold text-slate-300 border-b border-slate-700 pb-1 mb-1">{day} de {monthName}</p>
                       <div className="flex flex-col gap-1 max-h-32 overflow-y-auto custom-scrollbar">
-                        {events.map((e, idx) => (
-                          <div key={idx} className="flex justify-between items-center text-[10px]">
-                            <span className="truncate pr-2 flex-1">{e.title}</span>
-                            <span className={`font-bold ${e.type === 'renda' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {e.type === 'renda' ? '+' : '-'}{formatCurrency(e.amount, data.settings.currency)}
-                            </span>
-                          </div>
-                        ))}
+                        {events.map((e, idx) => {
+                          let colorClass = 'text-slate-300';
+                          if (e.source === 'conta_fixa' || e.source === 'salario') colorClass = 'text-amber-400';
+                          else if (e.status === 'pendente' || e.status === 'atrasado') colorClass = 'text-rose-400';
+                          else if (e.status === 'pago' || e.source === 'transacao') colorClass = 'text-emerald-400';
+
+                          return (
+                            <div key={idx} className="flex justify-between items-center text-[10px]">
+                              <span className={`truncate pr-2 flex-1 ${colorClass}`}>{e.title}</span>
+                              <span className={`font-bold ${colorClass}`}>
+                                {e.type === 'renda' ? '+' : '-'}{formatCurrency(e.amount, data.settings.currency)}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                       {/* Seta do tooltip */}
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 dark:bg-slate-900 border-b border-r border-slate-700 rotate-45" />

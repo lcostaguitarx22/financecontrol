@@ -134,7 +134,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onBack }) => {
       case 'Atrasado':
         return 'text-rose-600 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-400';
       case 'Pendente':
-        return 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400';
+        return 'text-rose-600 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-400';
       default:
         return 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-400';
     }

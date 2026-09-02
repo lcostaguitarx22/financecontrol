@@ -59,7 +59,7 @@ export const FinanceBudget: React.FC = () => {
       );
     }
     return (
-      <span className="text-[9px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/80 dark:text-amber-300 px-1.5 py-0.5 rounded-md">
+      <span className="text-[9px] font-bold text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300 px-1.5 py-0.5 rounded-md">
         PENDENTE
       </span>
     );
@@ -170,6 +170,37 @@ export const FinanceBudget: React.FC = () => {
       setIsAddingNewCategory(false);
       setNewCategoryName('');
     }
+  };
+
+  const isSalaryReceived = useMemo(() => {
+    return data.transactions.some(t => t.source === 'salario' && t.date.startsWith(selectedMonth));
+  }, [data.transactions, selectedMonth]);
+
+  const handleReceiveSalary = () => {
+    if (currentSalary <= 0) return;
+    
+    const today = new Date();
+    const currentYyyyMm = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    let dateStr = today.toISOString().split('T')[0];
+    if (selectedMonth !== currentYyyyMm) {
+      // Se estiver recebendo num mês passado/futuro, coloca no dia 1 daquele mês para constar lá
+      dateStr = `${selectedMonth}-01`;
+    }
+
+    const newTx = {
+      id: `tx-${Date.now()}`,
+      description: 'Salário Mensal',
+      amount: currentSalary,
+      type: 'receita' as const,
+      category: 'Salário',
+      date: dateStr,
+      source: 'salario'
+    };
+
+    setData(prev => ({
+      ...prev,
+      transactions: [newTx, ...(prev.transactions || [])]
+    }));
   };
 
   const handleAddCategory = () => {
@@ -319,9 +350,23 @@ export const FinanceBudget: React.FC = () => {
                   setIsEditingSalary(true);
                 }}
                 className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                title="Editar previsão de salário"
               >
                 <Edit3 className="w-3.5 h-3.5" />
               </button>
+              
+              {isSalaryReceived ? (
+                <span className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded-md border border-emerald-500/30">
+                  RECEBIDO
+                </span>
+              ) : (
+                <button
+                  onClick={handleReceiveSalary}
+                  className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold rounded-md transition-colors shadow-sm"
+                >
+                  Receber
+                </button>
+              )}
             </div>
           )}
 

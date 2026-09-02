@@ -78,12 +78,12 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ onClose })
           {pendingTodayBills.map((bill) => (
             <div
               key={bill.id}
-              className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-xl flex items-start gap-3"
+              className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 rounded-xl flex items-start gap-3"
             >
-              <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <Calendar className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
               <div className="flex-1 text-sm">
-                <p className="font-semibold text-amber-900 dark:text-amber-200">Vencimento Hoje</p>
-                <p className="text-amber-700 dark:text-amber-300 text-xs">
+                <p className="font-semibold text-rose-900 dark:text-rose-200">Vencimento Hoje</p>
+                <p className="text-rose-700 dark:text-rose-300 text-xs">
                   {bill.title} no valor de {formatCurrency(bill.amount, data.settings.currency)}.
                 </p>
               </div>
