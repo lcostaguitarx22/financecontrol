@@ -369,7 +369,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const contasPendentesAtual = Math.max(0, projectedFixedBillsCurrent - paidFixedBillsCurrent) + unpaidNormalBillsCurrent;
 
-  const budgetRestanteAtual = (totalRendaAtual + saldoCorrente) - contasPendentesAtual;
+  const totalBalance = data.transactions.reduce((acc, t) => acc + (t.type === 'receita' ? t.amount : -t.amount), 0);
+  const salarioRecebidoAtual = data.transactions
+    .filter(t => t.type === 'receita' && (t.source === 'salario' || t.category === 'Salário') && t.date.startsWith(realCurrentYyyyMm))
+    .reduce((acc, t) => acc + t.amount, 0);
+  
+  const faltaReceberAtual = Math.max(0, totalRendaAtual - salarioRecebidoAtual);
+  
+  const salarioAcumuladoAtual = totalBalance + faltaReceberAtual;
+  const budgetRestanteAtual = salarioAcumuladoAtual - contasPendentesAtual;
   const mesAtualNome = monthsNames[realCurrentMonthIndex];
 
   const nextMonthDate = new Date();
@@ -402,7 +410,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const contasPendentesProx = projectedFixedBills + nextMonthNormalBills;
 
-  const budgetRestanteProx = (totalRendaProx + budgetRestanteAtual) - contasPendentesProx;
+  const salarioAcumuladoProx = budgetRestanteAtual + totalRendaProx;
+  const budgetRestanteProx = salarioAcumuladoProx - contasPendentesProx;
   const mesSeguinteNome = monthsNames[nextMonthIndex];
 
   const anotherMonthDate = new Date();
@@ -435,7 +444,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const contasPendentesOutro = projectedFixedBillsAnother + anotherMonthNormalBills;
 
-  const budgetRestanteOutro = (totalRendaOutro + budgetRestanteProx) - contasPendentesOutro;
+  const salarioAcumuladoOutro = budgetRestanteProx + totalRendaOutro;
+  const budgetRestanteOutro = salarioAcumuladoOutro - contasPendentesOutro;
   const mesOutroNome = monthsNames[anotherMonthIndex];
 
   // ==========================================
@@ -620,26 +630,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-5 shadow-sm text-white">
           <div className="flex items-center gap-2 mb-4">
             <Wallet className="w-4 h-4 text-emerald-400" />
-            <h3 className="font-bold text-sm">Orçamento Previsto ({mesAtualNome})</h3>
+            <h3 className="font-bold text-sm uppercase">Orçamento Previsto ({mesAtualNome})</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário Previsto</p>
               <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaAtual, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário previsto + Saldo anterior</p>
-              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaAtual + saldoCorrente, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Pendentes</p>
-              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesAtual, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Salário Acumulado</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(salarioAcumuladoAtual, data.settings.currency)}</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Salário Acum. com Desconto</p>
               <p className={`text-sm font-bold mt-1 ${budgetRestanteAtual >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {formatCurrency(budgetRestanteAtual, data.settings.currency)}
               </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Despesas Fixas</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBillsCurrent, data.settings.currency)}</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Despesas Pendentes</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesAtual, data.settings.currency)}</p>
             </div>
           </div>
         </div>
@@ -648,26 +659,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-5 shadow-sm text-white">
           <div className="flex items-center gap-2 mb-4">
             <Wallet className="w-4 h-4 text-emerald-400" />
-            <h3 className="font-bold text-sm">Orçamento Previsto ({mesSeguinteNome})</h3>
+            <h3 className="font-bold text-sm uppercase">Orçamento Previsto ({mesSeguinteNome})</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário Previsto</p>
               <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Previsto de {mesAtualNome}</p>
-              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaProx + budgetRestanteAtual, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Pendentes</p>
-              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesProx, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Salário Acumulado</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(salarioAcumuladoProx, data.settings.currency)}</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Salário Acum. com Desconto</p>
               <p className={`text-sm font-bold mt-1 ${budgetRestanteProx >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {formatCurrency(budgetRestanteProx, data.settings.currency)}
               </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Despesas Fixas</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBills, data.settings.currency)}</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Despesas Pendentes</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesProx, data.settings.currency)}</p>
             </div>
           </div>
         </div>
@@ -676,26 +688,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-5 shadow-sm text-white">
           <div className="flex items-center gap-2 mb-4">
             <Wallet className="w-4 h-4 text-emerald-400" />
-            <h3 className="font-bold text-sm">Orçamento Previsto ({mesOutroNome})</h3>
+            <h3 className="font-bold text-sm uppercase">Orçamento Previsto ({mesOutroNome})</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Salário Previsto</p>
               <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaOutro, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Previsto de {mesSeguinteNome}</p>
-              <p className="text-sm font-bold text-white mt-1">{formatCurrency(totalRendaOutro + budgetRestanteProx, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Contas Pendentes</p>
-              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesOutro, data.settings.currency)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Livre</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Salário Acumulado</p>
+              <p className="text-sm font-bold text-white mt-1">{formatCurrency(salarioAcumuladoOutro, data.settings.currency)}</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Salário Acum. com Desconto</p>
               <p className={`text-sm font-bold mt-1 ${budgetRestanteOutro >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {formatCurrency(budgetRestanteOutro, data.settings.currency)}
               </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Despesas Fixas</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(projectedFixedBillsAnother, data.settings.currency)}</p>
+              
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mt-3">Despesas Pendentes</p>
+              <p className="text-sm font-bold text-pink-300 mt-1">{formatCurrency(contasPendentesOutro, data.settings.currency)}</p>
             </div>
           </div>
         </div>

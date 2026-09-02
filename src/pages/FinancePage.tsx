@@ -119,6 +119,21 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
 
   const nextMonthName = monthsNames[nextMonthD.getMonth()];
 
+  // Novos Cálculos de Projeção
+  const totalBalance = data.transactions.reduce((acc, t) => acc + (t.type === 'receita' ? t.amount : -t.amount), 0);
+  
+  const salarioRecebido_M1 = data.transactions
+    .filter(t => t.type === 'receita' && (t.source === 'salario' || t.category === 'Salário') && t.date.startsWith(currentMonthKey))
+    .reduce((acc, t) => acc + t.amount, 0);
+    
+  const faltaReceber_M1 = Math.max(0, previsaoReceitasAtual - salarioRecebido_M1);
+  
+  const salarioAcumulado_M1 = totalBalance + faltaReceber_M1;
+  const salarioAcumDesconto_M1 = salarioAcumulado_M1 - contasPendentesAtual;
+  
+  const salarioAcumulado_M2 = salarioAcumDesconto_M1 + previsaoReceitas;
+  const salarioAcumDesconto_M2 = salarioAcumulado_M2 - contasPendentesProx;
+
   // Filtrar transações
   const filteredTransactions = data.transactions.filter((t) => {
     if (filterCategory === 'todas') return true;
@@ -293,11 +308,11 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
 
                     <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUMULADO</p>
                     <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
-                      {formatCurrency(saldoMes + previsaoReceitasAtual, data.settings.currency)}
+                      {formatCurrency(salarioAcumulado_M1, data.settings.currency)}
                     </p>
                     <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUM. COM DESCONTO</p>
-                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400" title="Receitas + Acumulado - Contas Pendentes">
-                      {formatCurrency(previsaoReceitasAtual + saldoMes - contasPendentesAtual, data.settings.currency)}
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                      {formatCurrency(salarioAcumDesconto_M1, data.settings.currency)}
                     </p>
 
                   </div>
@@ -327,12 +342,12 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
                     </p>
 
                     <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUMULADO</p>
-                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400" title="Saldo projetado após descontos do mês anterior">
-                      {formatCurrency(previsaoReceitasAtual + saldoMes + previsaoReceitas - contasPendentesAtual , data.settings.currency)}
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                      {formatCurrency(salarioAcumulado_M2, data.settings.currency)}
                     </p>
                     <p className="text-[10px] text-slate-400 font-semibold mt-3 mb-1">SALÁRIO ACUM. COM DESCONTO</p>
-                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400" title="Receitas + Acumulado - Contas Pendentes">
-                      {formatCurrency(previsaoReceitas + (previsaoReceitasAtual + saldoMes - contasPendentesAtual) - contasPendentesProx, data.settings.currency)}
+                    <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                      {formatCurrency(salarioAcumDesconto_M2, data.settings.currency)}
                     </p>
                   </div>
                   <div>
