@@ -93,7 +93,11 @@ export const BillsPage: React.FC = () => {
     });
 
     // Transações
+    const billTxIds = new Set(data.bills.map(b => b.transactionId).filter(Boolean));
+
     data.transactions.forEach(t => {
+      if (billTxIds.has(t.id)) return; // Evita duplicar no calendário o que já é uma conta
+
       if (t.date === dateStr) {
         events.push({ id: t.id, title: t.description, amount: t.amount, type: t.type === 'receita' ? 'renda' : 'debito', source: 'transacao' });
       }

@@ -255,7 +255,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     });
 
     // Transações
+    const billTxIds = new Set(data.bills.map(b => b.transactionId).filter(Boolean));
+
     data.transactions.forEach(t => {
+      if (billTxIds.has(t.id)) return; // Evita duplicar o ponto no calendário se já tem uma conta paga com essa transação
+
       if (t.date === dateStr) {
         events.push({ id: t.id, title: t.description, amount: t.amount, type: t.type === 'receita' ? 'renda' : 'debito', source: 'transacao' });
       }
