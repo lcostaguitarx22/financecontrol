@@ -188,12 +188,15 @@ export const FinanceBudget: React.FC = () => {
   const handleReceiveSalary = () => {
     if (currentSalary <= 0) return;
     
-    const today = new Date();
-    const currentYyyyMm = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    let dateStr = today.toISOString().split('T')[0];
-    if (selectedMonth !== currentYyyyMm) {
-      // Se estiver recebendo num mês passado/futuro, coloca no dia 1 daquele mês para constar lá
-      dateStr = `${selectedMonth}-01`;
+    let dateStr = currentSalaryDate;
+    if (!dateStr) {
+      const today = new Date();
+      const currentYyyyMm = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+      dateStr = today.toISOString().split('T')[0];
+      if (selectedMonth !== currentYyyyMm) {
+        // Se estiver recebendo num mês passado/futuro, coloca no dia 1 daquele mês para constar lá
+        dateStr = `${selectedMonth}-01`;
+      }
     }
 
     const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
