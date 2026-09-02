@@ -88,20 +88,19 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             // --- FIM MIGRAÇÃO DE DATAS ---
 
             // --- INÍCIO REMOÇÃO DE CONTAS AUTOMÁTICAS ---
-            let needsUpdateBills = false;
-            let currentBills = [...loadedData.bills];
-            
             // Remove contas geradas automaticamente que ainda estão pendentes
-            const originalLength = currentBills.length;
-            currentBills = currentBills.filter(b => !(b.id.startsWith('b-auto-') && b.status === 'pendente'));
+            const originalLength = updatedBills.length;
+            updatedBills = updatedBills.filter(b => !(b.id.startsWith('b-auto-') && b.status === 'pendente'));
             
-            if (currentBills.length !== originalLength) {
-              needsUpdateBills = true;
+            if (updatedBills.length !== originalLength) {
+              needsUpdate = true;
             }
 
-            if (needsUpdateBills) {
-              loadedData.bills = currentBills;
+            if (needsUpdate) {
+              loadedData.bills = updatedBills;
               setDoc(docRef, loadedData);
+            } else {
+              loadedData.bills = updatedBills; // sempre garantir que a versão em memória receba o update se houve, mesmo sem salvar no db se não precisava
             }
             // --- FIM REMOÇÃO DE CONTAS AUTOMÁTICAS ---
 
