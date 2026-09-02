@@ -48,27 +48,12 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
   const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const [currYear, currMonth] = currentMonthKey.split('-').map(Number);
 
-  let totalReceitas = data.transactions
-    .filter((t) => t.type === 'receita')
+  const totalReceitas = data.transactions
+    .filter((t) => t.type === 'receita' && t.date.startsWith(currentMonthKey))
     .reduce((acc, t) => acc + t.amount, 0);
 
-  // Adiciona automaticamente o salário fixo se a data for >= final do mês (dia de pagamento) ou mês passado
-  Object.entries(data.monthlySalaries || {}).forEach(([monthKey, salary]) => {
-    const [y, m] = monthKey.split('-').map(Number);
-    const lastDayOfMonth = new Date(currYear, currMonth, 0).getDate();
-    // Consideramos pago se:
-    // 1. O mês for no passado
-    // 2. Ou se for o mês atual e hoje for dia >= (último dia do mês ou dia 30, o que for menor)
-    const paymentDay = Math.min(30, lastDayOfMonth);
-    if (y < currYear || (y === currYear && m < currMonth)) {
-      totalReceitas += salary;
-    } else if (y === currYear && m === currMonth && currentDay >= paymentDay) {
-      totalReceitas += salary;
-    }
-  });
-
   const totalDespesas = data.transactions
-    .filter((t) => t.type === 'despesa')
+    .filter((t) => t.type === 'despesa' && t.date.startsWith(currentMonthKey))
     .reduce((acc, t) => acc + t.amount, 0);
 
   const saldoMes = totalReceitas - totalDespesas;
