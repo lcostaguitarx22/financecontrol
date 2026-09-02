@@ -87,142 +87,23 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             });
             // --- FIM MIGRAÇÃO DE DATAS ---
 
-            // --- INÍCIO AUTO GENERATE FIXED BILLS ---
-            const todayStr = new Date().toISOString().split('T')[0];
-            const currentYyyyMm = todayStr.substring(0, 7);
-
-            // 1. Limpar contas geradas erroneamente no passado (antes do mês de início)
-            const wronglyGeneratedIds: string[] = [];
-            (loadedData.fixedBills || []).forEach(fixedBill => {
-              const bRecurrence = fixedBill.recurrence || 'mensal';
-              const bMonthKey = fixedBill.dueDate ? fixedBill.dueDate.substring(0, 7) : '';
-
-              updatedBills.forEach(bill => {
-                if (bill.fixedBillId === fixedBill.id && bill.id.startsWith('b-auto-')) {
-                  const billMonth = bill.dueDate.substring(0, 7);
-                  let shouldExist = true;
-                  if (bMonthKey) {
-                    if (bRecurrence === 'unico') {
-                      shouldExist = bMonthKey === billMonth;
-                    } else {
-                      shouldExist = bMonthKey <= billMonth;
-                    }
-                  }
-                  if (!shouldExist) {
-                    wronglyGeneratedIds.push(bill.id);
-                  }
-                }
-              });
-            });
-
-            if (wronglyGeneratedIds.length > 0) {
-              updatedBills = updatedBills.filter(b => !wronglyGeneratedIds.includes(b.id));
-              needsUpdate = true;
-            }
+            // --- INÍCIO REMOÇÃO DE CONTAS AUTOMÁTICAS ---
+            let needsUpdateBills = false;
+            let currentBills = [...loadedData.bills];
             
-            // 2. Gerar contas para o mês atual, se aplicável
-            (loadedData.fixedBills || []).forEach(fixedBill => {
-              const bRecurrence = fixedBill.recurrence || 'mensal';
-              const bMonthKey = fixedBill.dueDate ? fixedBill.dueDate.substring(0, 7) : '';
+            // Remove contas geradas automaticamente que ainda estão pendentes
+            const originalLength = currentBills.length;
+            currentBills = currentBills.filter(b => !(b.id.startsWith('b-auto-') && b.status === 'pendente'));
+            
+            if (currentBills.length !== originalLength) {
+              needsUpdateBills = true;
+            }
 
-              let shouldGenerate = true;
-              if (bMonthKey) {
-                if (bRecurrence === 'unico') {
-                  shouldGenerate = bMonthKey === currentYyyyMm;
-                } else {
-                  shouldGenerate = bMonthKey <= currentYyyyMm;
-                }
-              }
-
-              if (!shouldGenerate) return;
-
-              let dueDay = "01";
-              if (fixedBill.dueDate) {
-                const parts = fixedBill.dueDate.split('-');
-                if (parts.length === 3) dueDay = parts[2];
-              }
-
-              let expectedDueDate = `${currentYyyyMm}-${dueDay}`;
-              let finalPaymentMethod: any = 'saldo';
-              let finalIconName = 'FileText';
-
-              if (fixedBill.paymentSource && fixedBill.paymentSource.startsWith('cc:')) {
-                const cardId = fixedBill.paymentSource.split(':')[1];
-                const card = (loadedData.creditCards || []).find(c => c.id === cardId);
-                
-                finalPaymentMethod = 'cartao';
-                finalIconName = 'CreditCard';
-
-                // Se a despesa é no mês currentYyyyMm, o dia de "compra" (ou de impacto) é o dueDay.
-                const purchaseDay = parseInt(dueDay, 10);
-                const closingDay = card ? card.closingDay : 30;
-                const cardDueDay = card ? card.dueDay : 10;
-                
-                const [curYearStr, curMonthStr] = currentYyyyMm.split('-');
-                let invoiceMonth = parseInt(curMonthStr, 10);
-                let dueYear = parseInt(curYearStr, 10);
-
-                // Se passou do fechamento, cai no PRÓXIMO mês de referência
-                if (purchaseDay >= closingDay) {
-                  invoiceMonth += 1;
-                }
-
-                // Agora, com base no mês de referência (invoiceMonth), qual o mês de vencimento?
-                // Se fechamento > vencimento, a fatura vence no mês seguinte ao mês de referência
-                let finalDueMonth = invoiceMonth;
-                if (closingDay > cardDueDay) {
-                  finalDueMonth += 1;
-                }
-
-                if (finalDueMonth > 12) {
-                  finalDueMonth -= 12;
-                  dueYear += 1;
-                }
-                
-                expectedDueDate = `${dueYear}-${String(finalDueMonth).padStart(2, '0')}-${String(cardDueDay).padStart(2, '0')}`;
-              } else if (fixedBill.paymentSource === 'Cartão de Crédito') {
-                finalPaymentMethod = 'cartao';
-                finalIconName = 'CreditCard';
-                const [curYearStr, curMonthStr] = currentYyyyMm.split('-');
-                let dueYear = parseInt(curYearStr);
-                let dueMonthNum = parseInt(curMonthStr) + 1;
-                if (dueMonthNum > 12) {
-                  dueMonthNum = 1;
-                  dueYear++;
-                }
-                expectedDueDate = `${dueYear}-${String(dueMonthNum).padStart(2, '0')}-10`;
-              } else if (fixedBill.paymentSource === 'Pix') {
-                finalPaymentMethod = 'pix';
-              }
-              
-              const billId = `b-auto-${fixedBill.id}-${currentYyyyMm}`;
-              const isDeleted = (loadedData.deletedGeneratedBills || []).includes(billId);
-              
-              // We check by ID to see if it already exists or if it was deleted
-              const alreadyExists = updatedBills.some(b => b.id === billId) || isDeleted;
-
-              if (!alreadyExists) {
-                const newBill = {
-                  id: billId,
-                  title: fixedBill.name,
-                  amount: fixedBill.amount,
-                  dueDate: expectedDueDate,
-                  status: 'pendente' as const,
-                  category: fixedBill.category,
-                  fixedBillId: fixedBill.id,
-                  paymentMethod: finalPaymentMethod,
-                  iconName: finalIconName,
-                };
-                updatedBills.unshift(newBill);
-                needsUpdate = true;
-              }
-            });
-
-            if (needsUpdate) {
-              loadedData.bills = updatedBills;
+            if (needsUpdateBills) {
+              loadedData.bills = currentBills;
               setDoc(docRef, loadedData);
             }
-            // --- FIM AUTO GENERATE FIXED BILLS ---
+            // --- FIM REMOÇÃO DE CONTAS AUTOMÁTICAS ---
 
             setData(loadedData);
           } else {

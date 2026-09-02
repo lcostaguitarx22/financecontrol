@@ -1,2 +1,3 @@
 - A partir de agora, sempre que modificar arquivos de cdigo, faa um git add e um git commit e um git push automaticamente.
 - **Inputs de Data**: Sempre que a interface do usuário exigir a inserção de uma data (seja data completa ou apenas um dia de vencimento), utilize elementos nativos de calendário (como `<input type="date" />` em HTML/React) ao invés de inputs de texto livre ou inputs numéricos para o dia.
+- Em novas implementações, nunca altere códigos ou funcionalidades que já estão funcionando corretamente no sistema.
