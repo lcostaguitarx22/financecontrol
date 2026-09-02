@@ -34,13 +34,17 @@ interface HomePageProps {
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendimento }) => {
   const { data, livePrices, reloadData } = useAppData();
-  const [period, setPeriod] = useState('Este Mês');
+
+  const today = new Date();
+  const [calendarDate, setCalendarDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const currentYear = calendarDate.getFullYear();
+  const currentMonth = calendarDate.getMonth();
 
   // ==========================================
   // CÁLCULOS GERAIS
   // ==========================================
-  const currentMonthIdx = new Date().getMonth();
-  const currentYearIdx = new Date().getFullYear();
+  const currentMonthIdx = currentMonth;
+  const currentYearIdx = currentYear;
 
   const isThisMonth = (dateStr: string) => {
     if (!dateStr) return false;
@@ -201,10 +205,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   // ==========================================
   // 1. CALENDÁRIO
   // ==========================================
-  const today = new Date();
-  const [calendarDate, setCalendarDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const currentYear = calendarDate.getFullYear();
-  const currentMonth = calendarDate.getMonth();
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
   const currentYyyyMm = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
@@ -475,14 +475,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
         </div>
         <div className="relative">
           <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
+            value={monthsNames[currentMonth]}
+            onChange={(e) => {
+              const idx = monthsNames.indexOf(e.target.value);
+              setCalendarDate(new Date(currentYear, idx, 1));
+            }}
             id="home-period-select"
             className="appearance-none bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-xs font-bold text-indigo-900 dark:text-indigo-200 py-2 pl-3.5 pr-8 rounded-full shadow-xs focus:outline-none cursor-pointer"
           >
-            <option value="Este Mês">Este Mês</option>
-            <option value="Mês Passado">Mês Passado</option>
-            <option value="Ano Atual">Ano Atual</option>
+            {monthsNames.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
           </select>
           <ChevronDown className="w-3.5 h-3.5 text-indigo-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>

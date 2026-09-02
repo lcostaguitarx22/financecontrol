@@ -196,9 +196,13 @@ export const FinanceBudget: React.FC = () => {
       dateStr = `${selectedMonth}-01`;
     }
 
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const monthIndex = parseInt(selectedMonth.split('-')[1], 10) - 1;
+    const monthName = monthNames[monthIndex];
+
     const newTx = {
       id: `tx-${Date.now()}`,
-      description: 'Salário Mensal',
+      description: `SALÁRIO MENSAL ${monthName.toUpperCase()}`,
       amount: currentSalary,
       type: 'receita' as const,
       category: 'Salário',
