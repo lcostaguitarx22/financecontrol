@@ -113,8 +113,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
   const allVirtuals = [...getVirtualFixedBills(currentMonthYyyyMm), ...getVirtualFixedBills(nextMonthKey)];
   const allBills = [...data.bills, ...allVirtuals];
 
+  const isCardBill = (b: { paymentMethod?: string; iconName?: string; category?: string; title?: string; paymentSource?: string }) => {
+    return (
+      b.paymentMethod === 'cartao' ||
+      b.iconName === 'CreditCard' ||
+      b.category?.toLowerCase().includes('cartão') ||
+      b.category?.toLowerCase().includes('cartao') ||
+      b.title?.toLowerCase().includes('fatura') ||
+      b.title?.toLowerCase().includes('cartão') ||
+      b.title?.toLowerCase().includes('cartao') ||
+      Boolean(b.paymentSource && b.paymentSource.startsWith('cc:')) ||
+      (data.creditCards || []).some(c => c.id === b.paymentSource)
+    );
+  };
+
   const faturaCartao = allBills
-    .filter((b) => b.paymentMethod === 'cartao' && b.status !== 'pago' && b.dueDate?.startsWith(currentMonthYyyyMm))
+    .filter((b) => isCardBill(b) && b.status !== 'pago' && b.dueDate?.startsWith(currentMonthYyyyMm))
     .reduce((acc, b) => acc + b.amount, 0);
 
   const saldoGeral = saldoCorrente + saldoCripto;
@@ -146,49 +160,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     const monthStr = String(index + 1).padStart(2, '0');
     const yyyyMm = `${currentYearIdx}-${monthStr}`;
 
-    let faturaMes = data.bills
-      .filter(b => {
-        if (b.paymentMethod !== 'cartao' || !b.dueDate) return false;
-        
-        // Extrai o ano e o mês de vencimento da conta
-        const parts = b.dueDate.split('-');
-        if (parts.length < 2) return false;
-        
-        let dueYear = parseInt(parts[0], 10);
-        let dueMonth = parseInt(parts[1], 10);
-        
-        let compMonth = dueMonth - 1;
-        
-        if (b.paymentSource) {
-           const cardId = b.paymentSource.startsWith('cc:') ? b.paymentSource.split(':')[1] : b.paymentSource;
-           const card = (data.creditCards || []).find(c => c.id === cardId);
-           if (card) {
-               if (card.closingDay <= card.dueDay) {
-                   compMonth = dueMonth; // Fatura vence no mesmo mês do fechamento
-               } else {
-                   compMonth = dueMonth - 1; // Fatura vence no mês seguinte ao fechamento
-               }
-           }
-        }
-        
-        let compYear = dueYear;
-        if (compMonth === 0) {
-          compMonth = 12;
-          compYear -= 1;
-        } else if (compMonth === 13) {
-          compMonth = 1;
-          compYear += 1;
-        }
-        
-        const compYyyyMm = `${compYear}-${String(compMonth).padStart(2, '0')}`;
-        return compYyyyMm === yyyyMm;
-      })
+    const virtualsForMonth = getVirtualFixedBills(yyyyMm);
+    const allBillsForMonth = [...data.bills.filter(b => b.dueDate?.startsWith(yyyyMm)), ...virtualsForMonth];
+
+    let faturaMes = allBillsForMonth
+      .filter(b => isCardBill(b))
       .reduce((acc, b) => acc + Number(b.amount || 0), 0);
 
     // Injeta os dados históricos no gráfico para o ano de 2026
     if (currentYearIdx === 2026) {
       const hist = historicalCardData[monthStr] || 0;
-      faturaMes += hist; // Soma as novas compras cadastradas no app com o histórico
+      faturaMes += hist; // Soma as faturas cadastradas no app com o histórico
     }
 
     const gastosMes = data.transactions
