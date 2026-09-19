@@ -127,9 +127,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
     );
   };
 
-  const faturaCartao = allBills
-    .filter((b) => isCardBill(b) && b.status !== 'pago' && b.dueDate?.startsWith(currentMonthYyyyMm))
-    .reduce((acc, b) => acc + b.amount, 0);
+  const faturaCartaoProximoMes = allBills
+    .filter((b) => isCardBill(b) && b.dueDate?.startsWith(nextMonthKey))
+    .reduce((acc, b) => acc + Number(b.amount || 0), 0);
+
+  const faturasCartaoAtual = allBills.filter((b) => isCardBill(b) && b.dueDate?.startsWith(currentMonthYyyyMm));
+  const hasFaturaAtual = faturasCartaoAtual.length > 0;
+  const isFaturaAtualPendente = hasFaturaAtual ? faturasCartaoAtual.some(b => b.status !== 'pago') : false;
+  const statusFaturaAtualTexto = hasFaturaAtual ? (isFaturaAtualPendente ? '(Pendente)' : '(Pago)') : '';
 
   const saldoGeral = saldoCorrente + saldoCripto;
 
@@ -592,8 +597,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               <CreditCard className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-pink-100">Fatura do Cartão (Pendente)</p>
-              <p className="text-xl font-extrabold mt-0.5">{formatCurrency(faturaCartao, data.settings.currency)}</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-pink-100">Fatura do Cartão (Próximo Mês)</p>
+              <p className="text-xl font-extrabold mt-0.5">{formatCurrency(faturaCartaoProximoMes, data.settings.currency)}</p>
             </div>
           </div>
 
@@ -602,7 +607,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
               <CreditCard className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-indigo-100">Fatura Atual (Total Mês)</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-indigo-100">Fatura Atual {statusFaturaAtualTexto}</p>
               <p className="text-xl font-extrabold mt-0.5">{formatCurrency(yearlyChartData[new Date().getMonth()]?.Cartão || 0, data.settings.currency)}</p>
             </div>
           </div>
