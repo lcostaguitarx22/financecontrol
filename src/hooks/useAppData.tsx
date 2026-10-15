@@ -95,14 +95,48 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (updatedBills.length !== originalLength) {
               needsUpdate = true;
             }
+            // --- FIM REMOÇÃO DE CONTAS AUTOMÁTICAS ---
+
+            // --- INÍCIO SINCRONIZAÇÃO DE CONTAS FIXAS COM VALOR ATUALIZADO ---
+            const currentYyyyMm = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+            let updatedTransactions = [...(loadedData.transactions || [])];
+
+            updatedBills = updatedBills.map(bill => {
+              if (bill.fixedBillId && bill.dueDate && bill.dueDate.startsWith(currentYyyyMm)) {
+                const fixed = (loadedData.fixedBills || []).find(f => f.id === bill.fixedBillId);
+                if (fixed && (fixed.amount !== bill.amount || fixed.name !== bill.title)) {
+                  needsUpdate = true;
+                  if (bill.transactionId) {
+                    updatedTransactions = updatedTransactions.map(tx => {
+                      if (tx.id === bill.transactionId) {
+                        return {
+                          ...tx,
+                          amount: fixed.amount,
+                          description: `Pgto Manual: ${fixed.name}`
+                        };
+                      }
+                      return tx;
+                    });
+                  }
+                  return {
+                    ...bill,
+                    title: fixed.name,
+                    amount: fixed.amount,
+                    category: fixed.category || bill.category
+                  };
+                }
+              }
+              return bill;
+            });
+            // --- FIM SINCRONIZAÇÃO DE CONTAS FIXAS COM VALOR ATUALIZADO ---
 
             if (needsUpdate) {
               loadedData.bills = updatedBills;
+              loadedData.transactions = updatedTransactions;
               setDoc(docRef, loadedData);
             } else {
               loadedData.bills = updatedBills; // sempre garantir que a versão em memória receba o update se houve, mesmo sem salvar no db se não precisava
             }
-            // --- FIM REMOÇÃO DE CONTAS AUTOMÁTICAS ---
 
             setData(loadedData);
           } else {

@@ -24,7 +24,7 @@ import { useAppData } from '../hooks/useAppData';
 import { formatCurrency, formatDateBr } from '../utils/formatters';
 import { TabType } from '../types';
 import { DayDetailsModal, CalendarEvent } from '../components/modals/DayDetailsModal';
-import { toggleBillPaid } from '../services/storage';
+import { toggleBillPaid, addBill } from '../services/storage';
 import { CryptoIcon } from '../components/CryptoIcon';
 
 interface HomePageProps {
@@ -508,7 +508,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
                   )}
                 </div>
                 <button
-                  onClick={() => toggleBillPaid(bill.id)}
+                  onClick={() => {
+                    if ((bill as any).isVirtual) {
+                      addBill({
+                        title: (bill as any).originalBill.name,
+                        amount: (bill as any).originalBill.amount,
+                        dueDate: bill.dueDate,
+                        status: 'pendente',
+                        category: (bill as any).originalBill.category || 'Outros',
+                        iconName: (bill as any).originalBill.icon || 'Home',
+                        fixedBillId: (bill as any).originalBill.id
+                      }).then(nb => {
+                        toggleBillPaid(nb.id);
+                      });
+                    } else {
+                      toggleBillPaid(bill.id);
+                    }
+                  }}
                   className="px-4 py-2 bg-pink-500 hover:bg-pink-400 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-pink-500/30 whitespace-nowrap"
                 >
                   Pagar

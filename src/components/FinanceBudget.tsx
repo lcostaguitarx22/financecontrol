@@ -143,31 +143,49 @@ export const FinanceBudget: React.FC = () => {
         const fixedBillsList = prev.fixedBills || [];
         if (editingBillId) {
           const newFixedBills = fixedBillsList.map(b => b.id === editingBillId ? bill : b);
+          let updatedTransactions = [...(prev.transactions || [])];
           
           const updatedBills = (prev.bills || []).map(realBill => {
-            if (realBill.fixedBillId === editingBillId && realBill.status === 'pendente') {
-               let newDueDate = realBill.dueDate;
-               if (bill.dueDate && bill.dueDate.includes('-')) {
-                  const day = bill.dueDate.split('-')[2];
-                  if (day && realBill.dueDate.includes('-')) {
-                    const yyyymm = realBill.dueDate.substring(0, 7);
-                    newDueDate = `${yyyymm}-${day}`;
+            if (realBill.fixedBillId === editingBillId) {
+               const isTargetMonth = selectedMonth ? realBill.dueDate.startsWith(selectedMonth) : true;
+               if (realBill.status === 'pendente' || isTargetMonth) {
+                  let newDueDate = realBill.dueDate;
+                  if (bill.dueDate && bill.dueDate.includes('-')) {
+                     const day = bill.dueDate.split('-')[2];
+                     if (day && realBill.dueDate.includes('-')) {
+                       const yyyymm = realBill.dueDate.substring(0, 7);
+                       newDueDate = `${yyyymm}-${day}`;
+                     }
                   }
+
+                  if (realBill.status === 'pago' && realBill.transactionId) {
+                    updatedTransactions = updatedTransactions.map(tx => {
+                      if (tx.id === realBill.transactionId) {
+                        return {
+                          ...tx,
+                          amount: bill.amount,
+                          description: `Pgto Manual: ${bill.name}`
+                        };
+                      }
+                      return tx;
+                    });
+                  }
+
+                  return {
+                     ...realBill,
+                     title: bill.name,
+                     amount: bill.amount,
+                     category: bill.category,
+                     dueDate: newDueDate,
+                     paymentMethod: bill.paymentSource === 'Cartão de Crédito' ? 'cartao' : (bill.paymentSource === 'Pix' ? 'pix' : 'saldo'),
+                     iconName: bill.paymentSource === 'Cartão de Crédito' ? 'CreditCard' : 'FileText',
+                  };
                }
-               return {
-                  ...realBill,
-                  title: bill.name,
-                  amount: bill.amount,
-                  category: bill.category,
-                  dueDate: newDueDate,
-                  paymentMethod: bill.paymentSource === 'Cartão de Crédito' ? 'cartao' : (bill.paymentSource === 'Pix' ? 'pix' : 'saldo'),
-                  iconName: bill.paymentSource === 'Cartão de Crédito' ? 'CreditCard' : 'FileText',
-               };
             }
             return realBill;
           });
 
-          return { ...prev, fixedBills: newFixedBills, bills: updatedBills };
+          return { ...prev, fixedBills: newFixedBills, bills: updatedBills, transactions: updatedTransactions };
         } else {
           return { ...prev, fixedBills: [...fixedBillsList, bill] };
         }

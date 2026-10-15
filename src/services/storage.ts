@@ -135,12 +135,35 @@ export async function deleteBill(id: string): Promise<void> {
 
 export async function updateBill(id: string, billUpdate: Partial<Omit<Bill, 'id'>>): Promise<void> {
   const data = await getAppData();
+  let txToUpdate: { id: string; amount: number; description?: string } | null = null;
+
   data.bills = data.bills.map(b => {
     if (b.id === id) {
+      if (b.transactionId && billUpdate.amount !== undefined && billUpdate.amount !== b.amount) {
+        txToUpdate = {
+          id: b.transactionId,
+          amount: billUpdate.amount,
+          description: billUpdate.title ? `Pgto Manual: ${billUpdate.title}` : undefined
+        };
+      }
       return { ...b, ...billUpdate };
     }
     return b;
   });
+
+  if (txToUpdate) {
+    data.transactions = (data.transactions || []).map(t => {
+      if (t.id === txToUpdate!.id) {
+        return {
+          ...t,
+          amount: txToUpdate!.amount,
+          ...(txToUpdate!.description ? { description: txToUpdate!.description } : {})
+        };
+      }
+      return t;
+    });
+  }
+
   await saveAppData(data);
 }
 
