@@ -32,10 +32,11 @@ import { FinanceBudget } from '../components/FinanceBudget';
 
 interface FinancePageProps {
   onOpenReport: () => void;
+  onOpenRendimento?: () => void;
 }
 
-export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
-  const { data, reloadData } = useAppData();
+export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRendimento }) => {
+  const { data, livePrices, reloadData } = useAppData();
   const [activeTab, setActiveTab] = useState<'extrato' | 'orcamento'>('extrato');
   const [showNewTxModal, setShowNewTxModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
@@ -57,6 +58,27 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
     .reduce((acc, t) => acc + t.amount, 0);
 
   const saldoMes = totalReceitas - totalDespesas;
+
+  // Cálculos de Saldo Geral e Fluxo de Caixa
+  const totalRendimentos = (data.rendimentos || []).reduce((acc, r) => acc + r.amount, 0);
+
+  const saldoCorrente = data.transactions.reduce((acc, t) => {
+    return t.type === 'receita' ? acc + t.amount : acc - t.amount;
+  }, 0) + totalRendimentos;
+
+  const saldoCripto = (data.cryptos || []).reduce((acc, c) => {
+    const livePrice = livePrices?.cryptos[c.symbol.toUpperCase()]?.brl || c.unitPriceBrl;
+    return acc + (c.amount * livePrice);
+  }, 0);
+
+  const saldoGeral = saldoCorrente + saldoCripto;
+
+  const cashFlowData = (totalReceitas === 0 && totalDespesas === 0)
+    ? [{ name: 'Vazio', value: 1, color: '#e2e8f0' }]
+    : [
+        { name: 'Receitas', value: totalReceitas, color: '#6366f1' },
+        { name: 'Despesas', value: totalDespesas, color: '#ec4899' },
+      ];
 
   const knownSalaries = Object.entries(data.monthlySalaries || {})
     .sort((a, b) => a[0].localeCompare(b[0]))
@@ -224,6 +246,78 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport }) => {
         <FinanceBudget />
       ) : (
         <>
+          {/* Saldo Consolidado & Fluxo de Caixa */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card: Saldo Geral Consolidado */}
+            <div
+              onClick={onOpenRendimento}
+              className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white p-6 shadow-xl shadow-indigo-200/60 dark:shadow-none border border-indigo-500/30 ${onOpenRendimento ? 'cursor-pointer group transition-transform active:scale-[0.99]' : ''}`}
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex justify-between items-start mb-1">
+                <span className="text-[11px] font-bold tracking-wider text-indigo-200 uppercase">
+                  Saldo Consolidado
+                </span>
+                <span className="text-[10px] text-pink-100 bg-pink-500/30 border border-pink-400/40 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+                  <TrendingUp className="w-3 h-3" /> Atualizado
+                </span>
+              </div>
+              <div className="text-2xl font-extrabold text-white my-3 tracking-tight">
+                {formatCurrency(saldoGeral, data.settings.currency)}
+              </div>
+              <div className="pt-3 border-t border-indigo-500/40 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-indigo-200 font-medium">Conta Corrente</p>
+                  <p className="text-xs font-bold text-white mt-0.5">{formatCurrency(saldoCorrente, data.settings.currency)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-indigo-200 font-medium">Cripto</p>
+                  <p className="text-xs font-bold text-white mt-0.5">{formatCurrency(saldoCripto, data.settings.currency)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card: Fluxo de Caixa (Mês) */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex items-center gap-4">
+              <div className="w-20 h-20 shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={cashFlowData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={24}
+                      outerRadius={36}
+                      paddingAngle={3}
+                      dataKey="value"
+                      isAnimationActive={false}
+                    >
+                      {cashFlowData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3 flex-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Receitas</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(totalReceitas, data.settings.currency)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-pink-500" />
+                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Despesas</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(totalDespesas, data.settings.currency)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Saldo do Mês */}
           <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/50 dark:shadow-none border border-indigo-800/50 flex items-center justify-between">
             <div>
