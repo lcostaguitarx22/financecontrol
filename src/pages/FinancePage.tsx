@@ -19,7 +19,9 @@ import {
   Trash2,
   Pencil,
   FileSpreadsheet,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Calendar,
+  X
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAppData } from '../hooks/useAppData';
@@ -42,6 +44,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showOpenFinanceModal, setShowOpenFinanceModal] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('todas');
+  const [filterMonth, setFilterMonth] = useState<string>('');
 
   // Calcular totais
   const today = new Date();
@@ -148,11 +151,14 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
   const salarioAcumulado_M2 = salarioAcumDesconto_M1 + previsaoReceitas;
   const salarioAcumDesconto_M2 = salarioAcumulado_M2 - contasPendentesProx;
 
-  // Filtrar transações
-  const filteredTransactions = data.transactions.filter((t) => {
-    if (filterCategory === 'todas') return true;
-    return t.category.toLowerCase() === filterCategory.toLowerCase();
-  });
+  // Filtrar transações por categoria e por mês
+  const filteredTransactions = data.transactions
+    .filter((t) => {
+      const matchesCategory = filterCategory === 'todas' || t.category.toLowerCase() === filterCategory.toLowerCase();
+      const matchesMonth = !filterMonth || (t.date && t.date.startsWith(filterMonth));
+      return matchesCategory && matchesMonth;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Calcular despesas por categoria dinamicamente
   const expensesByCategory = data.transactions
@@ -454,26 +460,50 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
 
           {/* Card: Transações Recentes */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="font-bold text-slate-900 dark:text-white text-sm">
                 Transações Recentes
               </h3>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-slate-800 px-3 py-1 rounded-full border-none focus:outline-none cursor-pointer"
-              >
-                <option value="todas">Ver todas</option>
-                {(data.settings.categories || []).map(cat => (
-                  <option key={cat} value={cat.toLowerCase()}>{cat}</option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Filtro por Mês (Input nativo de calendário/mês) */}
+                <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-slate-800 px-3 py-1 rounded-full border border-transparent focus-within:border-indigo-300 dark:focus-within:border-indigo-600">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <input
+                    type="month"
+                    value={filterMonth}
+                    onChange={(e) => setFilterMonth(e.target.value)}
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-transparent border-none focus:outline-none cursor-pointer dark:[&::-webkit-calendar-picker-indicator]:invert"
+                    title="Filtrar por mês"
+                  />
+                  {filterMonth && (
+                    <button
+                      onClick={() => setFilterMonth('')}
+                      className="text-xs font-bold text-slate-400 hover:text-rose-500 ml-0.5 transition-colors"
+                      title="Limpar filtro de mês (ver todos)"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filtro por Categoria */}
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-slate-800 px-3 py-1 rounded-full border-none focus:outline-none cursor-pointer"
+                >
+                  <option value="todas">Ver todas</option>
+                  {(data.settings.categories || []).map(cat => (
+                    <option key={cat} value={cat.toLowerCase()}>{cat}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="space-y-3">
               {filteredTransactions.length === 0 ? (
                 <p className="text-center text-xs text-slate-400 py-6 font-medium">
-                  Nenhuma transação encontrada nesta categoria.
+                  Nenhuma transação encontrada com os filtros selecionados.
                 </p>
               ) : (
                 filteredTransactions.map((tx) => (
