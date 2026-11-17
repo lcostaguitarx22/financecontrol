@@ -160,9 +160,13 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Calcular despesas por categoria dinamicamente
-  const expensesByCategory = data.transactions
-    .filter(t => t.type === 'despesa')
+  // Calcular despesas por categoria dinamicamente (respeitando o mês atual ou despesas registradas)
+  const currentMonthExpenses = data.transactions.filter(t => t.type === 'despesa' && t.date.startsWith(currentMonthKey));
+  const baseExpenses = currentMonthExpenses.length > 0
+    ? currentMonthExpenses
+    : data.transactions.filter(t => t.type === 'despesa');
+
+  const expensesByCategory = baseExpenses
     .reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + t.amount;
       return acc;
@@ -177,7 +181,9 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
     }))
     .sort((a, b) => b.value - a.value);
 
-  const hasExpenses = categoryExpenses.length > 0;
+  const totalCategoryExpenses = categoryExpenses.reduce((acc, c) => acc + c.value, 0);
+
+  const hasExpenses = categoryExpenses.length > 0 && totalCategoryExpenses > 0;
   const pieData = hasExpenses ? categoryExpenses : [{ name: 'Vazio', value: 1, color: '#e2e8f0' }];
 
   // Verificar orçamento (budget) - pega o primeiro que excedeu ou tem alto uso
@@ -593,7 +599,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</span>
                 <span className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  {formatCurrency(totalDespesas, data.settings.currency)}
+                  {formatCurrency(totalCategoryExpenses, data.settings.currency)}
                 </span>
               </div>
             </div>
@@ -614,7 +620,9 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
                       </span>
                     </div>
                     <span className="font-extrabold text-slate-900 dark:text-white">
-                      {((item.value / totalDespesas) * 100).toFixed(0)}%
+                      {totalCategoryExpenses > 0
+                        ? Math.min(100, Math.max(0, (item.value / totalCategoryExpenses) * 100)).toFixed(0)
+                        : 0}%
                     </span>
                   </div>
                 ))
