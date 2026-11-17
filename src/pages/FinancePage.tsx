@@ -142,15 +142,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
   const nextMonthName = monthsNames[nextMonthD.getMonth()];
 
   // Novos Cálculos de Projeção
-  const totalBalance = data.transactions.reduce((acc, t) => acc + (t.type === 'receita' ? t.amount : -t.amount), 0);
-  
-  const salarioRecebido_M1 = data.transactions
-    .filter(t => t.type === 'receita' && (t.source === 'salario' || t.category === 'Salário') && t.date.startsWith(currentMonthKey))
-    .reduce((acc, t) => acc + t.amount, 0);
-    
-  const faltaReceber_M1 = Math.max(0, previsaoReceitasAtual - salarioRecebido_M1);
-  
-  const salarioAcumulado_M1 = totalBalance + faltaReceber_M1;
+  const salarioAcumulado_M1 = saldoCorrente + previsaoReceitasAtual;
   const salarioAcumDesconto_M1 = salarioAcumulado_M1 - contasPendentesAtual;
   
   const salarioAcumulado_M2 = salarioAcumDesconto_M1 + previsaoReceitas;

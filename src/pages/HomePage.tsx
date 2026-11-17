@@ -356,14 +356,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab, onOpenRendime
 
   const contasPendentesAtual = Math.max(0, projectedFixedBillsCurrent - paidFixedBillsCurrent) + unpaidNormalBillsCurrent;
 
-  const totalBalance = data.transactions.reduce((acc, t) => acc + (t.type === 'receita' ? t.amount : -t.amount), 0);
-  const salarioRecebidoAtual = data.transactions
-    .filter(t => t.type === 'receita' && (t.source === 'salario' || t.category === 'Salário') && t.date.startsWith(realCurrentYyyyMm))
-    .reduce((acc, t) => acc + t.amount, 0);
-  
-  const faltaReceberAtual = Math.max(0, totalRendaAtual - salarioRecebidoAtual);
-  
-  const salarioAcumuladoAtual = totalBalance + faltaReceberAtual;
+  const salarioAcumuladoAtual = saldoCorrente + totalRendaAtual;
   const budgetRestanteAtual = salarioAcumuladoAtual - contasPendentesAtual;
   const mesAtualNome = monthsNames[realCurrentMonthIndex];
 
