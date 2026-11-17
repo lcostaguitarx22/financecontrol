@@ -45,11 +45,9 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
   const [showOpenFinanceModal, setShowOpenFinanceModal] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('todas');
   const [filterMonth, setFilterMonth] = useState<string>('');
-
-  // Calcular totais
   const today = new Date();
-  const currentDay = today.getDate();
   const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const [categoryChartMonth, setCategoryChartMonth] = useState<string>(currentMonthKey);
   const [currYear, currMonth] = currentMonthKey.split('-').map(Number);
 
   const totalReceitas = data.transactions
@@ -160,20 +158,18 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Calcular despesas por categoria dinamicamente (respeitando o mês atual ou despesas registradas)
-  const currentMonthExpenses = data.transactions.filter(t => t.type === 'despesa' && t.date.startsWith(currentMonthKey));
-  const baseExpenses = currentMonthExpenses.length > 0
-    ? currentMonthExpenses
-    : data.transactions.filter(t => t.type === 'despesa');
+  const colors = ['#ec4899', '#6366f1', '#f97316', '#10b981', '#8b5cf6', '#06b6d4', '#eab308', '#f43f5e', '#3b82f6', '#14b8a6'];
 
-  const expensesByCategory = baseExpenses
-    .reduce((acc, t) => {
-      acc[t.category] = (acc[t.category] || 0) + t.amount;
-      return acc;
-    }, {} as Record<string, number>);
+  // 1. Despesas por Categoria no Mês Selecionado
+  const monthExpenses = data.transactions.filter(
+    (t) => t.type === 'despesa' && t.date.startsWith(categoryChartMonth)
+  );
+  const monthExpensesByCategory = monthExpenses.reduce((acc, t) => {
+    acc[t.category] = (acc[t.category] || 0) + t.amount;
+    return acc;
+  }, {} as Record<string, number>);
 
-  const colors = ['#ec4899', '#6366f1', '#f97316', '#10b981', '#8b5cf6'];
-  const categoryExpenses = Object.entries(expensesByCategory)
+  const monthCategoryExpenses = Object.entries(monthExpensesByCategory)
     .map(([name, value], index) => ({
       name,
       value: Number(value),
@@ -181,10 +177,28 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
     }))
     .sort((a, b) => b.value - a.value);
 
-  const totalCategoryExpenses = categoryExpenses.reduce((acc, c) => acc + c.value, 0);
+  const totalMonthCategoryExpenses = monthCategoryExpenses.reduce((acc, c) => acc + c.value, 0);
+  const hasMonthExpenses = monthCategoryExpenses.length > 0 && totalMonthCategoryExpenses > 0;
+  const pieDataMonth = hasMonthExpenses ? monthCategoryExpenses : [{ name: 'Vazio', value: 1, color: '#e2e8f0' }];
 
-  const hasExpenses = categoryExpenses.length > 0 && totalCategoryExpenses > 0;
-  const pieData = hasExpenses ? categoryExpenses : [{ name: 'Vazio', value: 1, color: '#e2e8f0' }];
+  // 2. Total Geral de Gastos por Categoria (Todo o histórico)
+  const allTimeExpenses = data.transactions.filter((t) => t.type === 'despesa');
+  const allTimeExpensesByCategory = allTimeExpenses.reduce((acc, t) => {
+    acc[t.category] = (acc[t.category] || 0) + t.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const allTimeCategoryExpenses = Object.entries(allTimeExpensesByCategory)
+    .map(([name, value], index) => ({
+      name,
+      value: Number(value),
+      color: colors[index % colors.length]
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const totalAllTimeCategoryExpenses = allTimeCategoryExpenses.reduce((acc, c) => acc + c.value, 0);
+  const hasAllTimeExpenses = allTimeCategoryExpenses.length > 0 && totalAllTimeCategoryExpenses > 0;
+  const pieDataAllTime = hasAllTimeExpenses ? allTimeCategoryExpenses : [{ name: 'Vazio', value: 1, color: '#e2e8f0' }];
 
   // Verificar orçamento (budget) - pega o primeiro que excedeu ou tem alto uso
   let highestBudgetAlert = null;
@@ -568,65 +582,167 @@ export const FinancePage: React.FC<FinancePageProps> = ({ onOpenReport, onOpenRe
             </div>
           </div>
 
-          {/* Card: Despesas por Categoria */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800">
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">
-              Despesas por Categoria
-            </h3>
+          {/* Grid: 2 Gráficos de Gastos por Categoria (Mês e Total Geral) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card 1: Gastos por Categoria (Mês) */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                      Gastos por Categoria (Mês)
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium">Distribuição do mês selecionado</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-transparent focus-within:border-indigo-300 dark:focus-within:border-indigo-600">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <input
+                      type="month"
+                      value={categoryChartMonth}
+                      onChange={(e) => setCategoryChartMonth(e.target.value || currentMonthKey)}
+                      className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-transparent border-none focus:outline-none cursor-pointer dark:[&::-webkit-calendar-picker-indicator]:invert"
+                      title="Selecionar mês"
+                    />
+                  </div>
+                </div>
 
-            <div className="relative flex justify-center my-2">
-              <div className="w-36 h-36">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={65}
-                      paddingAngle={3}
-                      dataKey="value"
-                      isAnimationActive={false}
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="relative flex justify-center my-2">
+                  <div className="w-36 h-36">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieDataMonth}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={65}
+                          paddingAngle={3}
+                          dataKey="value"
+                          isAnimationActive={false}
+                        >
+                          {pieDataMonth.map((entry, index) => (
+                            <Cell key={`cell-month-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {/* Label central no Donut */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</span>
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      {formatCurrency(totalMonthCategoryExpenses, data.settings.currency)}
+                    </span>
+                  </div>
+                </div>
               </div>
-              {/* Label central no Donut */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</span>
-                <span className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  {formatCurrency(totalCategoryExpenses, data.settings.currency)}
-                </span>
+
+              <div className="space-y-2 mt-4 pt-3 border-t border-indigo-100 dark:border-slate-800">
+                {!hasMonthExpenses ? (
+                  <p className="text-center text-xs text-slate-400 py-4">Nenhuma despesa neste mês.</p>
+                ) : (
+                  monthCategoryExpenses.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 truncate pr-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 truncate">
+                          {item.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {formatCurrency(item.value, data.settings.currency)}
+                        </span>
+                        <span className="font-extrabold text-slate-900 dark:text-white min-w-[36px] text-right">
+                          {totalMonthCategoryExpenses > 0
+                            ? Math.min(100, Math.max(0, (item.value / totalMonthCategoryExpenses) * 100)).toFixed(0)
+                            : 0}%
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
-            <div className="space-y-2 mt-4 pt-3 border-t border-indigo-100 dark:border-slate-800">
-              {!hasExpenses ? (
-                <p className="text-center text-xs text-slate-400">Nenhuma despesa registrada.</p>
-              ) : (
-                categoryExpenses.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">
-                        {item.name}
-                      </span>
-                    </div>
-                    <span className="font-extrabold text-slate-900 dark:text-white">
-                      {totalCategoryExpenses > 0
-                        ? Math.min(100, Math.max(0, (item.value / totalCategoryExpenses) * 100)).toFixed(0)
-                        : 0}%
+            {/* Card 2: Total Geral de Gastos por Categoria (Todo o histórico) */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-indigo-100/80 dark:border-slate-800 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                      Total Geral por Categoria
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium">Todo o histórico acumulado</p>
+                  </div>
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-slate-800 px-2.5 py-1 rounded-full">
+                    Geral
+                  </span>
+                </div>
+
+                <div className="relative flex justify-center my-2">
+                  <div className="w-36 h-36">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieDataAllTime}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={65}
+                          paddingAngle={3}
+                          dataKey="value"
+                          isAnimationActive={false}
+                        >
+                          {pieDataAllTime.map((entry, index) => (
+                            <Cell key={`cell-alltime-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {/* Label central no Donut */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</span>
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      {formatCurrency(totalAllTimeCategoryExpenses, data.settings.currency)}
                     </span>
                   </div>
-                ))
-              )}
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4 pt-3 border-t border-indigo-100 dark:border-slate-800">
+                {!hasAllTimeExpenses ? (
+                  <p className="text-center text-xs text-slate-400 py-4">Nenhuma despesa registrada.</p>
+                ) : (
+                  allTimeCategoryExpenses.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 truncate pr-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 truncate">
+                          {item.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {formatCurrency(item.value, data.settings.currency)}
+                        </span>
+                        <span className="font-extrabold text-slate-900 dark:text-white min-w-[36px] text-right">
+                          {totalAllTimeCategoryExpenses > 0
+                            ? Math.min(100, Math.max(0, (item.value / totalAllTimeCategoryExpenses) * 100)).toFixed(0)
+                            : 0}%
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
 
