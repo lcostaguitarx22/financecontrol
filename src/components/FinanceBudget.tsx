@@ -270,7 +270,7 @@ export const FinanceBudget: React.FC = () => {
   };
 
   // Calcula projeção para os próximos 6 meses
-  const generateProjection = () => {
+  const generateProjection = (paidWithBalanceInSelectedMonth: number) => {
     const monthsNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const currentD = new Date();
 
@@ -306,20 +306,25 @@ export const FinanceBudget: React.FC = () => {
         }
       }, 0);
 
+      // Se for o mês selecionado e houver contas pagas com saldo em conta, deduz apenas o que resta pagar do salário
+      let effectiveMonthBills = monthTotalBills;
+      if (targetYyyyMm === selectedMonth && paidWithBalanceInSelectedMonth > 0) {
+        effectiveMonthBills = Math.max(0, monthTotalBills - paidWithBalanceInSelectedMonth);
+      }
+
       const totalReceitas = monthSalary + monthExtra;
-      const monthlyBalance = totalReceitas - monthTotalBills;
+      const monthlyBalance = totalReceitas - effectiveMonthBills;
 
       projection.push({
         name: monthsNames[targetDate.getMonth()],
         Receitas: totalReceitas,
-        Despesas: monthTotalBills,
+        Despesas: effectiveMonthBills,
         Saldo: monthlyBalance
       });
     }
     return projection;
   };
 
-  const projectionData = useMemo(() => generateProjection(), [data.monthlySalaries, data.monthlyExtras, data.fixedBills, data.salary]);
   const filteredFixedBills = useMemo(() => {
     return (data.fixedBills || []).filter(bill => {
       const bRecurrence = bill.recurrence || 'mensal';
@@ -332,9 +337,55 @@ export const FinanceBudget: React.FC = () => {
     });
   }, [data.fixedBills, selectedMonth]);
 
-  const totalFixedBills = filteredFixedBills.reduce((acc, bill) => acc + bill.amount, 0);
+  const { totalFixedBills, paidFixedBills, pendingFixedBills, paidWithAccountBalance } = useMemo(() => {
+    let total = 0;
+    let paid = 0;
+    let pending = 0;
+    let paidWithBalance = 0;
+
+    const salaryTx = (data.transactions || []).find(t => t.source === 'salario' && t.date.startsWith(selectedMonth));
+
+    filteredFixedBills.forEach(bill => {
+      total += bill.amount;
+      const generatedBill = (data.bills || []).find(b => b.fixedBillId === bill.id && b.dueDate.startsWith(selectedMonth));
+      if (generatedBill && generatedBill.status === 'pago') {
+        paid += bill.amount;
+        if (!salaryTx) {
+          // Se o salário ainda não foi recebido no mês, a conta já foi paga usando o saldo em conta
+          paidWithBalance += bill.amount;
+        } else {
+          // Se o salário já foi recebido, verifica se a conta foi paga antes do salário
+          const billTx = (data.transactions || []).find(t => t.id === generatedBill.transactionId);
+          if (billTx) {
+            const isBeforeSalary = billTx.date < salaryTx.date || (billTx.date === salaryTx.date && billTx.id < salaryTx.id);
+            if (isBeforeSalary) {
+              paidWithBalance += bill.amount;
+            }
+          }
+        }
+      } else {
+        pending += bill.amount;
+      }
+    });
+
+    return {
+      totalFixedBills: total,
+      paidFixedBills: paid,
+      pendingFixedBills: pending,
+      paidWithAccountBalance: paidWithBalance
+    };
+  }, [filteredFixedBills, data.bills, data.transactions, selectedMonth]);
+
+  // Contas a descontar do salário a receber:
+  // As contas já pagas com o saldo em conta anterior não são descontadas do salário a receber
+  const contasADescontar = Math.max(0, totalFixedBills - paidWithAccountBalance);
   const totalReceitasAtuais = currentSalary + currentExtra;
-  const saldoPrevisto = totalReceitasAtuais - totalFixedBills;
+  const saldoPrevisto = totalReceitasAtuais - contasADescontar;
+
+  const projectionData = useMemo(
+    () => generateProjection(paidWithAccountBalance),
+    [data.monthlySalaries, data.monthlyExtras, data.fixedBills, data.salary, selectedMonth, paidWithAccountBalance]
+  );
 
   return (
     <div className="space-y-6 pb-24 animate-in fade-in duration-300">
@@ -463,8 +514,20 @@ export const FinanceBudget: React.FC = () => {
             <p className="text-sm font-bold truncate">{formatCurrency(totalReceitasAtuais, data.settings.currency)}</p>
           </div>
           <div>
-            <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">TOTAL CONTAS FIXAS</p>
-            <p className="text-sm font-bold truncate">{formatCurrency(totalFixedBills, data.settings.currency)}</p>
+            <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">
+              {paidWithAccountBalance > 0 ? 'CONTAS FIXAS A PAGAR' : 'TOTAL CONTAS FIXAS'}
+            </p>
+            <p className="text-sm font-bold truncate">
+              {formatCurrency(contasADescontar, data.settings.currency)}
+            </p>
+            {paidWithAccountBalance > 0 && (
+              <p
+                className="text-[10px] text-emerald-300 font-medium truncate"
+                title={`${formatCurrency(paidWithAccountBalance, data.settings.currency)} já pagas com o saldo em conta anterior. Total cadastrado: ${formatCurrency(totalFixedBills, data.settings.currency)}`}
+              >
+                {formatCurrency(paidWithAccountBalance, data.settings.currency)} pagas c/ saldo
+              </p>
+            )}
           </div>
           <div className="col-span-2 sm:col-span-1 sm:text-right">
             <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">SALDO NO MÊS</p>
@@ -664,7 +727,14 @@ export const FinanceBudget: React.FC = () => {
                 }
               }
 
-              const generatedBill = data.bills.find(b => b.fixedBillId === bill.id && b.dueDate.startsWith(selectedMonth));
+              const generatedBill = (data.bills || []).find(b => b.fixedBillId === bill.id && b.dueDate.startsWith(selectedMonth));
+              const isPaid = generatedBill?.status === 'pago';
+              const isPaidWithBalance = isPaid && (!isSalaryReceived || (() => {
+                const salaryTx = (data.transactions || []).find(t => t.source === 'salario' && t.date.startsWith(selectedMonth));
+                if (!salaryTx) return true;
+                const billTx = (data.transactions || []).find(t => t.id === generatedBill?.transactionId);
+                return billTx ? (billTx.date < salaryTx.date || (billTx.date === salaryTx.date && billTx.id < salaryTx.id)) : false;
+              })());
 
               return (
                 <div
@@ -673,9 +743,17 @@ export const FinanceBudget: React.FC = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{bill.name}</p>
                         {generatedBill && getStatusBadge(generatedBill.status)}
+                        {isPaidWithBalance && (
+                          <span
+                            className="text-[9px] font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded-md border border-emerald-300/40"
+                            title="Conta já paga com saldo em conta. Não é descontada do salário previsto."
+                          >
+                            Saldo em conta
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] text-slate-500 font-medium mt-0.5">{bill.category}</p>
                     </div>
