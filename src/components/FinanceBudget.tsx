@@ -379,6 +379,20 @@ export const FinanceBudget: React.FC = () => {
     };
   }, [filteredFixedBills, data.bills, data.transactions, selectedMonth]);
 
+  // Saldo real em conta corrente (atualizado com todas as transações e rendimentos)
+  const totalRendimentos = useMemo(() => {
+    return (data.rendimentos || []).reduce((acc, r) => acc + r.amount, 0);
+  }, [data.rendimentos]);
+
+  const saldoCorrente = useMemo(() => {
+    return (data.transactions || []).reduce((acc, t) => {
+      return t.type === 'receita' ? acc + t.amount : acc - t.amount;
+    }, 0) + totalRendimentos;
+  }, [data.transactions, totalRendimentos]);
+
+  // Saldo em conta com o valor das contas fixas pendentes do mês descontado
+  const saldoAposContasFixas = saldoCorrente - pendingFixedBills;
+
   // Contas a descontar do salário a receber:
   // As contas já pagas (com o saldo em conta anterior) NÃO são descontadas do salário a receber!
   // Deduz-se apenas as contas fixas que ainda estão PENDENTES.
@@ -511,30 +525,73 @@ export const FinanceBudget: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/20 relative z-10">
-          <div>
-            <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">RECEITAS TOTAIS</p>
-            <p className="text-sm font-bold truncate">{formatCurrency(totalReceitasAtuais, data.settings.currency)}</p>
-          </div>
-          <div>
-            <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">
-              {paidFixedBills > 0 ? 'CONTAS PENDENTES' : 'TOTAL CONTAS FIXAS'}
-            </p>
-            <p className="text-sm font-bold truncate">
-              {formatCurrency(pendingFixedBills, data.settings.currency)}
-            </p>
-            {paidFixedBills > 0 && (
-              <p
-                className="text-[10px] text-emerald-300 font-medium truncate"
-                title={`${formatCurrency(paidFixedBills, data.settings.currency)} já pagas com o saldo em conta anterior. Total cadastrado: ${formatCurrency(totalFixedBills, data.settings.currency)}`}
-              >
-                {formatCurrency(paidFixedBills, data.settings.currency)} pagas c/ saldo
+        <div className="pt-4 border-t border-white/20 relative z-10 space-y-3">
+          {/* Métricas de Saldo em Conta */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/20 p-3.5 rounded-2xl border border-white/10">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Wallet className="w-3.5 h-3.5 text-indigo-200 shrink-0" />
+                <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-wider">
+                  Saldo em Conta
+                </p>
+              </div>
+              <p className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                {formatCurrency(saldoCorrente, data.settings.currency)}
               </p>
-            )}
+              <p className="text-[10px] text-indigo-200/80 mt-0.5">Saldo real disponível agora</p>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-wider">
+                  Saldo c/ Contas Descontadas
+                </p>
+              </div>
+              <p className={`text-lg sm:text-xl font-extrabold tracking-tight ${saldoAposContasFixas >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {formatCurrency(saldoAposContasFixas, data.settings.currency)}
+              </p>
+              <p className="text-[10px] text-indigo-200/80 mt-0.5">
+                {pendingFixedBills > 0
+                  ? `Após pagar ${formatCurrency(pendingFixedBills, data.settings.currency)} de contas pendentes`
+                  : 'Todas as contas fixas já pagas'}
+              </p>
+            </div>
           </div>
-          <div className="col-span-2 sm:col-span-1 sm:text-right">
-            <p className="text-indigo-100 text-[10px] font-semibold mb-0.5">SALDO NO MÊS</p>
-            <p className="text-sm font-bold truncate">{formatCurrency(saldoPrevisto, data.settings.currency)}</p>
+
+          {/* Métricas de Orçamento / Salário do Mês */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+            <div>
+              <p className="text-indigo-100 text-[10px] font-semibold mb-0.5 uppercase tracking-wider">
+                Receitas Totais
+              </p>
+              <p className="text-sm font-bold truncate">
+                {formatCurrency(totalReceitasAtuais, data.settings.currency)}
+              </p>
+            </div>
+            <div>
+              <p className="text-indigo-100 text-[10px] font-semibold mb-0.5 uppercase tracking-wider">
+                {paidFixedBills > 0 ? 'Contas Pendentes' : 'Total Contas Fixas'}
+              </p>
+              <p className="text-sm font-bold truncate">
+                {formatCurrency(pendingFixedBills, data.settings.currency)}
+              </p>
+              {paidFixedBills > 0 && (
+                <p
+                  className="text-[9px] text-emerald-300 font-medium truncate"
+                  title={`${formatCurrency(paidFixedBills, data.settings.currency)} já pagas com o saldo em conta anterior. Total cadastrado: ${formatCurrency(totalFixedBills, data.settings.currency)}`}
+                >
+                  {formatCurrency(paidFixedBills, data.settings.currency)} pagas c/ saldo
+                </p>
+              )}
+            </div>
+            <div className="col-span-2 sm:col-span-1 sm:text-right">
+              <p className="text-indigo-100 text-[10px] font-semibold mb-0.5 uppercase tracking-wider">
+                Saldo no Mês
+              </p>
+              <p className={`text-sm font-bold truncate ${saldoPrevisto >= 0 ? 'text-white' : 'text-rose-300'}`}>
+                {formatCurrency(saldoPrevisto, data.settings.currency)}
+              </p>
+            </div>
           </div>
         </div>
       </div>
